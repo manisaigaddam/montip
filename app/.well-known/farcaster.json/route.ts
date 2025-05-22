@@ -12,7 +12,7 @@ export async function GET() {
       imageUrl: `${APP_URL}/images/feed.png`,
       screenshotUrls: [],
       tags: ["monad", "farcaster", "miniapp", "montip"],
-      primaryCategory: "tipping",
+      primaryCategory: "developer-tools",
       buttonTitle: "Launch Montip",
       splashImageUrl: `${APP_URL}/images/splash.png`,
       splashBackgroundColor: "#ffffff",
