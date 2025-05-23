@@ -256,9 +256,15 @@ export default function Home() {
       </div>
       {/* Show Create button if no wallet */}
       {!walletAddress && (
-        <button className="bg-gradient-to-r from-[#5b4dcf] to-[#a280ff] text-white px-8 py-3 rounded-full font-bold text-lg shadow transition-transform duration-150 hover:scale-105 mt-8" onClick={handleCreate} disabled={creating}>
-          {creating ? "Creating..." : "Create Wallet"}
-        </button>
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <button
+            onClick={handleCreate}
+            disabled={creating}
+            className="px-8 py-3 bg-gradient-to-r from-[#5b4dcf] to-[#a280ff] text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+          >
+            {creating ? "Creating..." : "Create Wallet"}
+          </button>
+        </div>
       )}
       <HelpButton />
     </div>
