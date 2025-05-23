@@ -256,7 +256,7 @@ export default function Home() {
       </div>
       {/* Show Create button if no wallet */}
       {!walletAddress && (
-        <div className="flex flex-col items-center justify-center space-y-4">
+        <div className="flex flex-1 items-center justify-center w-full" style={{ minHeight: "60vh" }}>
           <button
             onClick={handleCreate}
             disabled={creating}
