@@ -38,15 +38,15 @@ export default function HelpButton() {
               <div className="space-y-4 text-gray-700">
                 <div>
                   <h3 className="font-semibold text-lg mb-2">1. Create Your Wallet</h3>
-                  <p>Click "Create Wallet" to set up your Montip smart wallet. This only needs to be done once.</p>
+                  <p>Click &quot;Create Wallet&quot; to set up your Montip smart wallet. This only needs to be done once.</p>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-lg mb-2">2. Fund & Manage Your Wallet</h3>
+                  <h3 className="font-semibold text-lg mb-2">2. Fund &amp; Manage Your Wallet</h3>
                   <ul className="list-disc pl-5 mt-2">
                     <li>Send tokens to your Montip wallet address to add funds.</li>
                     <li>Click the copy icon to easily copy your wallet address.</li>
-                    <li>Click "Update Balances" to refresh your wallet balance.</li>
+                    <li>Click &quot;Update Balances&quot; to refresh your wallet balance.</li>
                   </ul>
                 </div>
 
@@ -85,4 +85,4 @@ export default function HelpButton() {
       )}
     </>
   );
-} 
+}
