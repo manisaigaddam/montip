@@ -2,19 +2,29 @@
 
 import { useMiniAppContext } from "@/hooks/use-miniapp-context";
 import { useEffect, useState, useRef } from "react";
-import { createPublicClient, http } from "viem";
+import { createPublicClient, http, formatUnits } from "viem";
 import { monadTestnet } from "viem/chains";
 import factoryAbi from "@/lib/factoryAbi.json";
 import erc20Abi from "@/lib/erc20Abi.json";
 import HelpButton from '../HelpButton';
 import SplashScreen from '../SplashScreen';
+import { parseEther, isAddress, getAddress, parseUnits } from "viem";
+import {
+  useAccount,
+  useConnect,
+  useDisconnect,
+  useSendTransaction,
+  useSwitchChain,
+  useWriteContract,
+} from "wagmi";
+import { farcasterFrame } from "@farcaster/frame-wagmi-connector";
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS as `0x${string}`;
 
 // Full token list (from user)
-const TOKENS = [
+const RAW_TOKENS = [
   { symbol: "MON", address: null, decimals: 18 },
-  { symbol: "USDC", address: "0xf817257fed379853cDe0fa4F97AB987181B1E5Ea", decimals: 6 },
+  { symbol: "USDC", address: "0xf817257FeD379853cDe0fa4F97AB987181B1E5Ea", decimals: 6 },
   { symbol: "USDT", address: "0x88B8E2161DEDC77EF4AB7585569D2415A1C1055D", decimals: 6 },
   { symbol: "BEAN", address: "0x268E4E24E0051EC27B3D27A95977E71CE6875A05", decimals: 18 },
   { symbol: "BMONAD", address: "0x3552F8254263EA8880C7F7E25CB8DBBD79C0C4B1", decimals: 18 },
@@ -52,23 +62,81 @@ const TOKENS = [
   { symbol: "stMON", address: "0x199C0DA6F291A897302300AAAE4F20D139162916", decimals: 18 },
 ];
 
+const TOKENS = RAW_TOKENS.map(t =>
+  t.address ? { ...t, address: getAddress(t.address) } : t
+);
+
 function shortenAddress(addr: string) {
   return addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : "-";
 }
 
+function formatBalance(val: string | number | undefined, decimals = 4) {
+  if (!val || isNaN(Number(val))) return '0.0000';
+  return Number(val).toFixed(decimals);
+}
+
 export default function Home() {
-  const { context } = useMiniAppContext();
+  const { context, isEthProviderAvailable } = useMiniAppContext();
   const [copied, setCopied] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true); // true for initial load
+  const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [balances, setBalances] = useState<Record<string, string>>({});
   const [polling, setPolling] = useState(false);
   const [creationError, setCreationError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'wallet' | 'topTippers'>('wallet');
+  const [activeTab, setActiveTab] = useState<'assets' | 'deposit' | 'withdraw'>('assets');
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const fid = context?.user?.fid;
   const username = context?.user?.username || "-";
+
+  // Wallet hooks
+  const { isConnected, address, chainId } = useAccount();
+  const { disconnect } = useDisconnect();
+  const { data: txHash, sendTransaction, error: sendTxError, isError: isSendTxError } = useSendTransaction();
+  const { switchChain } = useSwitchChain();
+  const { connect } = useConnect();
+
+  // New state for deposit
+  const [depositToken, setDepositToken] = useState(TOKENS[0]);
+  const [depositAmount, setDepositAmount] = useState("");
+  const [isDepositing, setIsDepositing] = useState(false);
+  const [depositError, setDepositError] = useState<string | null>(null);
+  const [depositSuccess, setDepositSuccess] = useState<string | null>(null);
+
+  const { writeContract, writeContractAsync } = useWriteContract();
+
+  // Withdraw state
+  const [withdrawToOther, setWithdrawToOther] = useState(false);
+  const [withdrawOtherAddress, setWithdrawOtherAddress] = useState("");
+  const [withdrawToken, setWithdrawToken] = useState(TOKENS[0]);
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
+  const [withdrawSuccess, setWithdrawSuccess] = useState<string | null>(null);
+
+  // New state for login wallet balances
+  const [montipBalances, setMontipBalances] = useState<Record<string, string>>({});
+  const [loginWalletBalances, setLoginWalletBalances] = useState<Record<string, string>>({});
+
+  // Auto-hide messages
+  useEffect(() => {
+    if (withdrawSuccess || withdrawError) {
+      const timer = setTimeout(() => {
+        setWithdrawSuccess(null);
+        setWithdrawError(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [withdrawSuccess, withdrawError]);
+  useEffect(() => {
+    if (depositSuccess || depositError) {
+      const timer = setTimeout(() => {
+        setDepositSuccess(null);
+        setDepositError(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [depositSuccess, depositError]);
 
   console.log("[MiniApp] Loaded context:", context);
 
@@ -78,38 +146,80 @@ export default function Home() {
     transport: http("https://testnet-rpc.monad.xyz"),
   });
 
-  // Use backend API for token balances (single address)
-  const fetchBalances = async (address: string) => {
-    try {
-      const response = await fetch('/api/get-balances', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address }),
-      });
-      const data = await response.json();
-      const tokensArr = data?.data?.tokens || [];
-      const newBalances: Record<string, string> = {};
+  const MONAD_TESTNET_ID = 10143;
+
+  // Helper to fetch balances for both wallets using Alchemy batch endpoint
+  const fetchAllBalances = async (montipAddress: string, loginAddress?: string) => {
+    const addresses = [
+      { address: montipAddress, networks: ["monad-testnet"] },
+    ];
+    if (loginAddress) {
+      addresses.push({ address: loginAddress, networks: ["monad-testnet"] });
+    }
+    const response = await fetch("https://api.g.alchemy.com/data/v1/ClXqqWvrb6dzy32jRH4jzOfqEReo3T7h/assets/tokens/balances/by-address", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ addresses, includeNativeTokens: true }),
+    });
+    const body = await response.json();
+    const tokensArr = body?.data?.tokens || [];
+    const montip: Record<string, string> = {};
+    const login: Record<string, string> = {};
       for (const tokenObj of tokensArr) {
-        // Native MON
-        if (!tokenObj.tokenAddress) {
-          newBalances["MON"] = (parseInt(tokenObj.tokenBalance, 16) / 1e18).toFixed(4);
-        } else {
-          // ERC-20
+      const isMontip = tokenObj.address.toLowerCase() === montipAddress.toLowerCase();
+      const isLogin = loginAddress && tokenObj.address.toLowerCase() === loginAddress.toLowerCase();
+      // Find token meta
+      let symbol = "MON";
+      let decimals = 18;
+      if (tokenObj.tokenAddress) {
           const token = TOKENS.find(
-            (t) =>
-              t.address &&
-              t.address.toLowerCase() === tokenObj.tokenAddress.toLowerCase()
+          (t) => t.address && t.address.toLowerCase() === tokenObj.tokenAddress.toLowerCase()
           );
           if (token) {
-            newBalances[token.symbol] = (
-              parseInt(tokenObj.tokenBalance, 16) / 10 ** token.decimals
-            ).toFixed(4);
-          }
+          symbol = token.symbol;
+          decimals = token.decimals;
+        } else {
+          continue; // skip unknown tokens
         }
       }
-      setBalances(newBalances);
-    } catch (e) {
-      console.error("[MiniApp] Error fetching balances:", e);
+      const value = (parseInt(tokenObj.tokenBalance, 16) / 10 ** decimals).toFixed(4);
+      if (isMontip) montip[symbol] = value;
+      if (isLogin) login[symbol] = value;
+    }
+    setMontipBalances(montip);
+    setLoginWalletBalances(login);
+  };
+
+  // On initial load, fetch only Montip wallet balances
+  useEffect(() => {
+    if (!walletAddress) return;
+    fetchAllBalances(walletAddress);
+  }, [walletAddress]);
+
+  // After wallet connect, fetch both
+  useEffect(() => {
+    if (!walletAddress) return;
+    if (!isConnected || !address) return;
+    fetchAllBalances(walletAddress, address);
+  }, [walletAddress, isConnected, address]);
+
+  // On Assets tab, always fetch both if connected
+  useEffect(() => {
+    if (activeTab === 'assets' && walletAddress) {
+      if (isConnected && address) {
+        fetchAllBalances(walletAddress, address);
+      } else {
+        fetchAllBalances(walletAddress);
+      }
+    }
+  }, [activeTab, walletAddress, isConnected, address]);
+
+  // After deposit/withdraw, re-fetch both
+  const refreshBalances = () => {
+    if (walletAddress && isConnected && address) {
+      fetchAllBalances(walletAddress, address);
+    } else if (walletAddress) {
+      fetchAllBalances(walletAddress);
     }
   };
 
@@ -132,7 +242,6 @@ export default function Home() {
         if (address && address !== "0x0000000000000000000000000000000000000000") {
           console.log("[MiniApp] Wallet found:", address);
           setWalletAddress(address as string);
-          await fetchBalances(address as string);
         } else {
           console.log("[MiniApp] No wallet found for FID:", fid);
           setWalletAddress(null);
@@ -151,7 +260,7 @@ export default function Home() {
     if (!walletAddress) return;
     setPolling(true);
     console.log("[MiniApp] Manual balance update triggered");
-    fetchBalances(walletAddress).finally(() => setPolling(false));
+    fetchAllBalances(walletAddress).finally(() => setPolling(false));
   };
 
   // Replace handleCreate with API call
@@ -184,7 +293,7 @@ export default function Home() {
         });
         setWalletAddress(address as string);
         if (address && address !== '0x0000000000000000000000000000000000000000') {
-          await fetchBalances(address as string);
+          await fetchAllBalances(address as string);
         }
       }, 2000);
     } catch (e: any) {
@@ -205,46 +314,301 @@ export default function Home() {
   // Show all tokens, always
   const visibleTokens = TOKENS;
 
+  // Effect to handle transaction confirmation and success message for MON deposit
+  useEffect(() => {
+    if (txHash) {
+      (async () => {
+        try {
+          await publicClient.waitForTransactionReceipt({ hash: txHash });
+          setDepositSuccess("Deposit successful!");
+          refreshBalances();
+        } catch (err: any) {
+          if (err?.message?.toLowerCase().includes("user rejected")) {
+            setDepositError("You rejected the transaction.");
+          } else {
+            setDepositError("Deposit failed: Please try again");
+          }
+        }
+      })();
+    }
+  }, [txHash]);
+
+  // Reset withdraw amount when token changes
+  useEffect(() => {
+    setWithdrawAmount("");
+  }, [withdrawToken]);
+
+  // Reset deposit amount when token changes (like withdraw)
+  useEffect(() => {
+    setDepositAmount("");
+  }, [depositToken]);
+
+  const handleDeposit = async () => {
+    setIsDepositing(true);
+    setDepositError(null);
+    setDepositSuccess(null);
+    try {
+      if (chainId !== MONAD_TESTNET_ID) {
+        setDepositError("Switch to Monad Testnet");
+        setIsDepositing(false);
+        return;
+      }
+      if (!walletAddress || !address) {
+        setDepositError("Wallet not connected");
+        setIsDepositing(false);
+        return;
+      }
+      if (!depositAmount || isNaN(Number(depositAmount)) || Number(depositAmount) <= 0) {
+        setDepositError("Enter a valid amount");
+        setIsDepositing(false);
+        return;
+      }
+      // Use loginWalletBalances for deposit check
+      const bal = loginWalletBalances[depositToken.symbol];
+      if (bal && Number(depositAmount) > Number(bal)) {
+        setDepositError("Insufficient funds: Not enough balance");
+        setIsDepositing(false);
+        return;
+      }
+      if (depositToken.symbol === "MON") {
+        try {
+          sendTransaction({
+            to: walletAddress as `0x${string}`,
+            value: parseEther(depositAmount),
+            gas: BigInt(25000),
+          });
+          // Success message will be handled in the txHash effect
+          // No need to wait for receipt or check tx.hash here
+          // No inline note about MON fee
+        } catch (err: any) {
+          if (err?.message?.toLowerCase().includes("user rejected")) {
+            setDepositError("You rejected the transaction.");
+          } else if (err?.message?.toLowerCase().includes("insufficient funds")) {
+            setDepositError("You do not have enough balance to deposit.");
+          } else {
+            setDepositError("Deposit failed. Please try again.");
+          }
+          setIsDepositing(false);
+          return;
+        }
+      } else {
+        if (depositToken.address) {
+          try {
+            const rawAddress = typeof depositToken.address === "string" ? depositToken.address.trim() : "";
+            if (!isAddress(rawAddress)) {
+              setDepositError("Invalid address: Please check the address");
+              setIsDepositing(false);
+              return;
+            }
+            let checksummedAddress;
+            try {
+              checksummedAddress = getAddress(rawAddress);
+            } catch (err) {
+              setDepositError("Invalid address: Please check the address");
+              setIsDepositing(false);
+              return;
+            }
+            const tx = await writeContractAsync({
+              address: checksummedAddress,
+              abi: erc20Abi,
+              functionName: "transfer",
+              args: [walletAddress as `0x${string}`, BigInt(String(Math.floor(Number(depositAmount) * 10 ** depositToken.decimals)))]
+            });
+            if (tx) {
+              // Wait for confirmation
+              await publicClient.waitForTransactionReceipt({ hash: tx });
+              setDepositSuccess("Deposit successful!");
+              refreshBalances();
+            }
+          } catch (err: any) {
+            if (err?.message?.toLowerCase().includes("user rejected")) {
+              setDepositError("You rejected the transaction.");
+            } else if (err?.message?.toLowerCase().includes("insufficient funds")) {
+              setDepositError("Insufficient funds: Not enough balance");
+            } else {
+              setDepositError("Deposit failed: Please try again");
+            }
+          }
+        } else {
+          setDepositError("Invalid address: Please check the address");
+        }
+      }
+    } catch (err: any) {
+      setDepositError("Deposit failed: Please try again");
+    }
+    setIsDepositing(false);
+  };
+
+  // Helper to get max withdrawable balance
+  const getMaxWithdrawAmount = () => {
+    const bal = montipBalances[withdrawToken.symbol];
+    return bal ? bal : "";
+  };
+
+  // Withdraw handler
+  const handleWithdraw = async () => {
+    setIsWithdrawing(true);
+    setWithdrawError(null);
+    setWithdrawSuccess(null);
+    try {
+      if (!walletAddress) {
+        setWithdrawError("No Montip wallet found");
+        setIsWithdrawing(false);
+        return;
+      }
+      const toAddr = withdrawToOther ? withdrawOtherAddress : address;
+      if (!toAddr) {
+        setWithdrawError("No recipient address");
+        setIsWithdrawing(false);
+        return;
+      }
+      if (!withdrawAmount || isNaN(Number(withdrawAmount)) || Number(withdrawAmount) <= 0) {
+        setWithdrawError("Enter a valid amount");
+        setIsWithdrawing(false);
+        return;
+      }
+      const max = getMaxWithdrawAmount();
+      if (max && Number(withdrawAmount) > Number(max)) {
+        setWithdrawError("Insufficient funds: Not enough balance");
+        setIsWithdrawing(false);
+        return;
+      }
+      const res = await fetch("/api/withdraw", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fromWallet: walletAddress,
+          toAddress: toAddr,
+          tokenSymbol: withdrawToken.symbol,
+          amount: withdrawAmount,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.error?.toLowerCase().includes("insufficient funds")) {
+          setWithdrawError("Insufficient funds: Not enough balance");
+        } else if (data.error?.toLowerCase().includes("invalid")) {
+          setWithdrawError("Invalid address: Please check the address");
+        } else {
+          setWithdrawError("Withdraw failed: Please try again");
+        }
+      } else {
+        setWithdrawSuccess("Withdraw successful!");
+        setWithdrawAmount("");
+        refreshBalances();
+      }
+    } catch (err: any) {
+      setWithdrawError("Withdraw failed: Please try again");
+    }
+    setIsWithdrawing(false);
+  };
+
+  // Auto-switch to Monad Testnet (10143) when wallet is connected and not on the correct chain
+  useEffect(() => {
+    if (isConnected && chainId !== MONAD_TESTNET_ID && switchChain) {
+      switchChain({ chainId: MONAD_TESTNET_ID });
+    }
+  }, [isConnected, chainId, switchChain]);
+
   // No custom splash logic; rely on Warpcast SDK splash
   if (loading) return null;
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-start" style={{
+    <div className="min-h-screen h-full w-full flex flex-col items-center justify-start" style={{
       background: "linear-gradient(135deg, #5b4dcf 0%, #a280ff 100%)",
       minHeight: "100vh"
     }}>
       <SplashScreen />
-      {/* Top bar: username/fid left, product name right */}
+      
+      {/* Top bar: product name, username, fid left; wallet right */}
       <div className="w-full flex flex-row items-center justify-between pt-6 pb-2 px-4">
-        <div className="text-lg text-white font-bold tracking-wide font-sans">@{username} <span className="text-xs text-indigo-100 font-medium">(fid: {fid ?? "-"})</span></div>
-        <span className="text-white font-extrabold text-xl tracking-widest uppercase">montip</span>
-      </div>
-      {/* Pill-shaped address box */}
-      {walletAddress && (
-        <div className="flex items-center bg-white/90 rounded-full px-5 py-2 shadow text-sm font-mono text-gray-700 mb-6 transition-transform duration-150 hover:scale-105">
-          {shortenAddress(walletAddress)}
-          <button onClick={handleCopy} className="ml-2 hover:text-green-500 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"><rect width="14" height="14" x="5" y="5" fill="#64748b" rx="2"/><rect width="14" height="14" x="7" y="7" fill="#fff" rx="2"/><rect width="14" height="14" x="9" y="9" fill="#64748b" rx="2"/></svg>
-          </button>
-          {copied && <span className="ml-2 text-green-600 font-semibold">Copied!</span>}
+        <div className="flex flex-col items-start">
+          <span className="text-white font-extrabold text-xl tracking-widest uppercase mb-1">MONTIP</span>
+          <div className="text-lg text-white font-bold tracking-wide font-sans">@{username}</div>
+          <div className="text-sm text-indigo-100 font-medium">FID: {fid ?? "-"}</div>
         </div>
-      )}
-      {/* Update Balances Button */}
-      {walletAddress && (
-        <button className="bg-gradient-to-r from-[#5b4dcf] to-[#a280ff] text-white px-8 py-3 rounded-full font-bold text-lg shadow transition-transform duration-150 hover:scale-105 mb-6" onClick={handleUpdateBalances} disabled={polling}>
-          {polling ? "Updating..." : "Update Balances"}
+        <div className="flex flex-col items-end">
+          {isConnected ? (
+            <div className="flex flex-row items-center space-x-2">
+              <div className="flex flex-col items-start">
+                <span className="text-white text-sm">{shortenAddress(address || '')}</span>
+                <span className="text-xs text-white/80">{formatBalance(loginWalletBalances["MON"])} MON</span>
+              </div>
+              <button
+                onClick={() => disconnect()}
+                className="bg-white/20 text-white px-2 py-1 rounded text-sm hover:bg-white/30 ml-2"
+              >
+                Disconnect
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => connect({ connector: farcasterFrame() })}
+              className="bg-white text-black px-4 py-1 rounded text-sm hover:bg-white/90"
+            >
+              Connect Wallet
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="w-full max-w-lg px-4 mb-2">
+        <div className="flex space-x-2 bg-white/10 rounded-lg p-1">
+          {(['assets', 'deposit', 'withdraw'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                activeTab === tab
+                  ? 'bg-white text-black'
+                  : 'text-white hover:bg-white/10'
+              }`}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+          </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      <div className="w-full max-w-lg px-4 flex-1 flex flex-col justify-center items-center">
+        {activeTab === 'assets' && (
+          <>
+            {/* Wallet address with copy icon */}
+            {walletAddress && (
+              <div className="flex items-center justify-between bg-white/20 rounded-xl px-4 py-2 mb-2">
+                <span className="font-bold text-white mr-2">Montip Wallet</span>
+                <span className="font-mono text-xs text-white mr-2">{shortenAddress(walletAddress)}</span>
+                <button
+                  onClick={handleCopy}
+                  className="text-white bg-indigo-500 hover:bg-indigo-600 rounded p-1"
+                  title={copied ? "Copied!" : "Copy address"}
+                >
+                  {copied ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m2.25-2.25V6.75A2.25 2.25 0 0015.75 4.5h-7.5A2.25 2.25 0 006 6.75v10.5A2.25 2.25 0 008.25 19.5h6.5A2.25 2.25 0 0017 17.25v-2.25" />
+                    </svg>
+                  )}
         </button>
+              </div>
       )}
-      {/* Tokens block stretches to bottom, scrolls internally if needed */}
-      <div className="flex flex-col flex-grow w-full max-w-lg">
+            {/* Tokens List Block fills available height with scroll inside */}
+            <div className="flex flex-col flex-1 w-full max-w-lg pb-6">
         {walletAddress && (
-          <div className="bg-white border border-gray-200 rounded-2xl px-6 py-4 w-full flex flex-col flex-grow min-h-0" style={{height: '100%', flex: 1}}>
+                <div className="bg-white border border-gray-200 rounded-2xl px-6 py-4 w-full flex-1 flex flex-col">
             <div className="text-lg font-bold text-gray-700 mb-2 text-center">Tokens</div>
-            <div className="flex-1 min-h-0 max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 flex flex-col">
-              {Object.entries(balances).map(([symbol, balance], idx, arr) => (
+                  <div className="flex-1 min-h-0 overflow-y-auto flex flex-col" style={{ maxHeight: '260px', overflowY: 'auto' }}>
+                    {Object.entries(montipBalances).map(([symbol, balance], idx, arr) => (
                 <div
                   key={symbol}
-                  className={`flex flex-row items-center justify-between px-2 py-3 ${idx < arr.length - 1 ? 'border-b border-gray-200' : ''}`}
+                        className={`flex flex-row items-center justify-between px-2 py-3 ${
+                          idx < arr.length - 1 ? 'border-b border-gray-200' : ''
+                        }`}
                 >
                   <span className="font-mono text-base text-gray-900 font-bold">{symbol}</span>
                   <span className="font-mono text-lg font-bold text-gray-900">{balance}</span>
@@ -254,7 +618,240 @@ export default function Home() {
           </div>
         )}
       </div>
-      {/* Show Create button if no wallet */}
+          </>
+        )}
+
+        {activeTab === 'deposit' && (
+          <div className="flex justify-center items-center w-full flex-1">
+            <div className="bg-white/20 border border-white/30 shadow-xl rounded-2xl p-4 w-full max-w-[370px] flex flex-col items-center justify-start">
+              <div className="w-full">
+                {!isConnected ? (
+                  <div className="flex flex-col items-center justify-center w-full py-8">
+                    <button
+                      onClick={() => connect({ connector: farcasterFrame() })}
+                      className="bg-white text-black px-6 py-2 rounded text-lg font-bold hover:bg-white/90 mb-3"
+                    >
+                      Connect Wallet
+                    </button>
+                    <div className="text-white text-center text-sm">Connect your login wallet to deposit tokens.</div>
+                  </div>
+                ) : (
+                  <>
+                    {/* From/To Wallets at the top */}
+                    <div className="w-full mb-4">
+                      <div className="text-xs text-white/80 mb-1">From connected wallet:</div>
+                      <span className="block font-mono text-xs text-white bg-black/20 rounded px-2 py-1 mb-2 break-all">
+                        {address}
+                      </span>
+                      <div className="text-xs text-white/80 mb-1">To your Montip wallet:</div>
+                      <span className="block font-mono text-xs text-white bg-black/20 rounded px-2 py-1 break-all">
+                        {walletAddress}
+                      </span>
+                    </div>
+                    <div className="w-full mb-4">
+                      <select
+                        value={depositToken.symbol}
+                        onChange={e => setDepositToken(TOKENS.find(t => t.symbol === e.target.value) || TOKENS[0])}
+                        className="w-full p-3 rounded-lg border border-gray-300 text-lg font-semibold text-gray-800 focus:outline-none"
+                      >
+                        {TOKENS.map(token => (
+                          <option key={token.symbol} value={token.symbol}>
+                            {token.symbol}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {/* Show connected wallet balance for selected token */}
+                    <div className="w-full mb-2 text-right text-xs text-white/80">
+                      Balance: {loginWalletBalances[depositToken.symbol] ? Number(loginWalletBalances[depositToken.symbol]).toFixed(4) : '0.0000'} {depositToken.symbol}
+                    </div>
+                    <div className="w-full mb-4 relative">
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={depositAmount}
+                        onChange={e => setDepositAmount(e.target.value)}
+                        placeholder="Amount"
+                        className="w-full p-3 rounded-lg border border-gray-300 text-lg font-mono focus:outline-none pr-16"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 text-black text-xs font-bold px-3 py-1 rounded shadow hover:bg-white"
+                        style={{ zIndex: 2 }}
+                        onClick={() => setDepositAmount(loginWalletBalances[depositToken.symbol] || "")}
+                      >
+                        Max
+                      </button>
+                    </div>
+                    <button
+                      className="w-full bg-green-500 hover:bg-green-600 text-white text-lg font-bold py-3 rounded-lg transition-all duration-150 shadow mb-4"
+                      onClick={handleDeposit}
+                      disabled={isDepositing || !depositAmount || !walletAddress || !address}
+                    >
+                      {isDepositing ? "Depositing..." : `Deposit ${depositToken.symbol}`}
+                    </button>
+                    {depositSuccess && <div className="mt-2 text-green-300 text-center font-semibold">{depositSuccess}</div>}
+                    {depositError && (
+                      <div className="mt-2 text-red-300 text-center font-semibold">
+                        {depositError === 'You do not have enough balance to deposit.' && 'Insufficient balance.'}
+                        {depositError === 'Please switch to Monad Testnet to deposit.' && 'Please switch to Monad Testnet to deposit.'}
+                        {depositError === 'Please connect your wallet to deposit.' && 'Please connect your wallet to deposit.'}
+                        {depositError === 'Please enter a valid amount.' && 'Please enter a valid amount.'}
+                        {depositError === 'There was an issue with the token address. Please try again.' && 'There was an issue with the token address. Please try again.'}
+                        {depositError === 'You rejected the transaction.' && 'You rejected the transaction.'}
+                        {depositError === 'Deposit failed. Please try again.' && 'Deposit failed. Please try again.'}
+                        {/* fallback for any other error */}
+                        {![
+                          'You do not have enough balance to deposit.',
+                          'Please switch to Monad Testnet to deposit.',
+                          'Please connect your wallet to deposit.',
+                          'Please enter a valid amount.',
+                          'There was an issue with the token address. Please try again.',
+                          'You rejected the transaction.',
+                          'Deposit failed. Please try again.'
+                        ].includes(depositError) && depositError}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'withdraw' && (
+          <div className="flex justify-center items-center w-full flex-1">
+            <div className="bg-white/20 border border-white/30 shadow-xl rounded-2xl p-4 w-full max-w-[370px] flex flex-col items-center justify-start" style={{ boxSizing: 'border-box', marginTop: '8px', marginBottom: '8px' }}>
+              <div className="w-full">
+                {!isConnected ? (
+                  <div className="flex flex-col items-center justify-center w-full py-8">
+                    <button
+                      onClick={() => connect({ connector: farcasterFrame() })}
+                      className="bg-white text-black px-6 py-2 rounded text-lg font-bold hover:bg-white/90 mb-3"
+                    >
+                      Connect Wallet
+                    </button>
+                    <div className="text-white text-center text-sm">Connect your login wallet to withdraw tokens.</div>
+                  </div>
+                ) : (
+                  <>
+                    {/* From Montip wallet */}
+                    <div className="w-full mb-4">
+                      <div className="text-xs text-white/80 mb-1">From your Montip wallet:</div>
+                      <span className="block font-mono text-xs text-white bg-black/20 rounded px-2 py-1 break-all w-full">{walletAddress}</span>
+                    </div>
+                    {/* To login wallet (default) */}
+                    <div className="w-full mb-4">
+                      <div className="text-xs text-white/80 mb-1">Send to login wallet:</div>
+                      <span className="block font-mono text-xs text-white bg-black/20 rounded px-2 py-1 break-all">
+                        {address || "-"}
+                      </span>
+                    </div>
+                    {/* Withdraw to different wallet */}
+                    <div className="w-full mb-4 flex items-center">
+                      <input
+                        id="withdraw-different-wallet"
+                        type="checkbox"
+                        className="mr-2"
+                        checked={withdrawToOther}
+                        onChange={e => setWithdrawToOther(e.target.checked)}
+                      />
+                      <label htmlFor="withdraw-different-wallet" className="text-xs text-white/80">Withdraw to a different wallet</label>
+                    </div>
+                    {withdrawToOther && (
+                      <div className="w-full mb-4">
+                        <input
+                          type="text"
+                          value={withdrawOtherAddress}
+                          onChange={e => setWithdrawOtherAddress(e.target.value)}
+                          placeholder="Recipient address"
+                          className="w-full p-3 rounded-lg border border-gray-300 text-lg font-mono focus:outline-none"
+                        />
+                      </div>
+                    )}
+                    {/* Token select and amount */}
+                    <div className="w-full mb-4">
+                      <select
+                        value={withdrawToken.symbol}
+                        onChange={e => setWithdrawToken(TOKENS.find(t => t.symbol === e.target.value) || TOKENS[0])}
+                        className="w-full p-3 rounded-lg border border-gray-300 text-lg font-semibold text-gray-800 focus:outline-none"
+                      >
+                        {TOKENS.map(token => (
+                          <option key={token.symbol} value={token.symbol}>
+                            {token.symbol}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="w-full mb-2 text-right text-xs text-white/80">
+                      Balance: {montipBalances[withdrawToken.symbol] ? Number(montipBalances[withdrawToken.symbol]).toFixed(4) : '0.0000'} {withdrawToken.symbol}
+                    </div>
+                    <div className="w-full mb-4 relative">
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={withdrawAmount}
+                        onChange={e => setWithdrawAmount(e.target.value)}
+                        placeholder="Amount"
+                        className="w-full p-3 rounded-lg border border-gray-300 text-lg font-mono focus:outline-none pr-16"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 text-black text-xs font-bold px-3 py-1 rounded shadow hover:bg-white"
+                        style={{ zIndex: 2 }}
+                        onClick={() => {
+                          const bal = montipBalances[withdrawToken.symbol] ? Number(montipBalances[withdrawToken.symbol]) : 0;
+                          if (withdrawToken.symbol === "MON") {
+                            setWithdrawAmount(bal > 0.008 ? (bal - 0.008).toFixed(4) : "0");
+                          } else {
+                            setWithdrawAmount(bal.toFixed(4));
+                          }
+                        }}
+                      >
+                        Max
+                      </button>
+                    </div>
+                    {/* Withdraw button */}
+                    <button
+                      className="w-full bg-green-500 hover:bg-green-600 text-white text-lg font-bold py-3 rounded-lg transition-all duration-150 shadow mb-4"
+                      onClick={handleWithdraw}
+                      disabled={isWithdrawing || !withdrawAmount || !walletAddress || (!address && !withdrawToOther) || Number(withdrawAmount) <= 0}
+                    >
+                      {isWithdrawing ? `Withdrawing...` : `Withdraw ${withdrawToken.symbol}`}
+                    </button>
+                    {withdrawSuccess && <div className="mt-2 text-green-300 text-center font-semibold">Withdraw successful! Your funds are on the way.</div>}
+                    {withdrawError && (
+                      <div className="mt-2 text-red-300 text-center font-semibold">
+                        {withdrawError === 'You do not have enough balance to withdraw.' && 'Insufficient balance.'}
+                        {withdrawError === 'No Montip wallet found.' && 'No Montip wallet found.'}
+                        {withdrawError === 'No recipient address provided.' && 'No recipient address provided.'}
+                        {withdrawError === 'Please enter a valid amount.' && 'Please enter a valid amount.'}
+                        {withdrawError === 'There was an issue with the address. Please try again.' && 'There was an issue with the address. Please try again.'}
+                        {withdrawError === 'You rejected the transaction.' && 'You rejected the transaction.'}
+                        {withdrawError === 'Withdraw failed. Please try again.' && 'Withdraw failed. Please try again.'}
+                        {/* fallback for any other error */}
+                        {![
+                          'You do not have enough balance to withdraw.',
+                          'No Montip wallet found.',
+                          'No recipient address provided.',
+                          'Please enter a valid amount.',
+                          'There was an issue with the address. Please try again.',
+                          'You rejected the transaction.',
+                          'Withdraw failed. Please try again.'
+                        ].includes(withdrawError) && withdrawError}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Create Wallet Button */}
       {!walletAddress && (
         <div className="flex flex-1 items-center justify-center w-full" style={{ minHeight: "60vh" }}>
           <button
@@ -266,6 +863,7 @@ export default function Home() {
           </button>
         </div>
       )}
+      
       <HelpButton />
     </div>
   );
