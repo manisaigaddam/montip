@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { FrameProvider } from "@/components/farcaster-provider";
+import FrameWalletProvider from "@/components/frame-wallet-provider";
 
 import "./globals.css";
 
@@ -19,7 +20,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <FrameProvider>{children}</FrameProvider>
+        <FrameWalletProvider>
+          <FrameProvider>
+            {children}
+          </FrameProvider>
+        </FrameWalletProvider>
       </body>
     </html>
   );
