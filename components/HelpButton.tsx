@@ -38,15 +38,17 @@ export default function HelpButton() {
               <div className="space-y-4 text-gray-700">
                 <div>
                   <h3 className="font-semibold text-lg mb-2">1. Create Your Wallet</h3>
-                  <p>Click &quot;Create Wallet&quot; to set up your Montip smart wallet. This only needs to be done once.</p>
+                  <p>Click &quot;Create Wallet&quot; to set up your Montip smart wallet. This only needs to be done once for your Farcaster account.</p>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-lg mb-2">2. Fund &amp; Manage Your Wallet</h3>
+                  <h3 className="font-semibold text-lg mb-2">2. Manage Your Funds</h3>
                   <ul className="list-disc pl-5 mt-2">
-                    <li>Send tokens to your Montip wallet address to add funds.</li>
-                    <li>Click the copy icon to easily copy your wallet address.</li>
-                    <li>Click &quot;Update Balances&quot; to refresh your wallet balance.</li>
+                    <li>Send tokens directly to your Montip wallet address</li>
+                    <li>Use the Deposit tab to send from your connected wallet</li>
+                    <li>Use the Withdraw tab to send to any address</li>
+                    <li>Click &quot;Update Balances&quot; to refresh your balance</li>
+                    <li>View all your balances in the Assets tab</li>
                   </ul>
                 </div>
 
@@ -62,18 +64,21 @@ export default function HelpButton() {
 
                 <div>
                   <h3 className="font-semibold text-lg mb-2">Supported Tokens</h3>
-                  <p>MON, USDC, USDT, CHOG, DAK, BEAN, WMON, WSOL, WETH, WBTC, JAIL, and many more!</p>
+                  <p>MON, USDC, USDT, BEAN, BMONAD, CHOG, DAK, HALLI, HEDGE, JAI, KEYS, MAD, MIST, MONDA, MOON, NOM, NSTR, P1, RBSD, RED, TFAT, USDX, USDm, WBTC, WETH, WMON, WSOL, YAKI, aprMON, gMON, iceMON, mamaBTC, muBOND, sMON, shMON, stMON</p>
                 </div>
 
                 <div>
                   <h3 className="font-semibold text-lg mb-2">Fee Structure</h3>
-                  <p>Each tip includes a fixed fee of <span className="font-bold">0.008 MON</span> to cover gas and operational costs.</p>
+                  <ul className="list-disc pl-5 mt-2">
+                    <li>Each tip includes a fixed fee of <span className="font-bold">0.008 MON</span></li>
+                    <li>Each withdraw includes a fixed fee of <span className="font-bold">0.008 MON</span></li>
+                    <li>Fees cover gas and operational costs</li>
+                  </ul>
                 </div>
 
                 <div>
                   <h3 className="font-semibold text-lg mb-2">Future Updates</h3>
                   <ul className="list-disc pl-5 mt-2">
-                    <li><span className="font-bold">Withdraw:</span> Withdraw tokens from your Montip wallet to your address (coming soon).</li>
                     <li><span className="font-bold">Tip Events:</span> Special events where both top tippers and recipients can earn rewards (stay tuned!).</li>
                     <li>And more features to make tipping even easier!</li>
                   </ul> 
