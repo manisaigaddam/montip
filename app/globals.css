@@ -14,6 +14,15 @@
     --background-start-rgb: 0, 0, 0;
     --background-end-rgb: 0, 0, 0;
   }
+  input[type="number"],
+  input[type="text"] {
+    color: #111 !important;
+  }
+  input[type="number"]::placeholder,
+  input[type="text"]::placeholder {
+    color: #888 !important;
+    opacity: 1;
+  }
 }
 
 body {
