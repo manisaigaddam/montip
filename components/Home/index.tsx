@@ -30,36 +30,36 @@ const RAW_TOKENS = [
   { symbol: "BMONAD", address: "0x3552F8254263EA8880C7F7E25CB8DBBD79C0C4B1", decimals: 18 },
   { symbol: "CHOG", address: "0xE0590015A873BF326BD645C3E1266D4DB41C4E6B", decimals: 18 },
   { symbol: "DAK", address: "0x0F0BDEBF0F83CD1EE3974779BCB7315F9808C714", decimals: 18 },
-  { symbol: "HALLI", address: "0x6CE1890EEADAE7DB01026F4B294CB8EC5ECC6563", decimals: 18 },
-  { symbol: "HEDGE", address: "0x04A9D9D4AEA93F512A4C7B71993915004325ED38", decimals: 18 },
-  { symbol: "JAI", address: "0xCC5B42F9D6144DFDFB6FB3987A2A916AF902F5F8", decimals: 6 },
-  { symbol: "KEYS", address: "0x8A056DF4D7F23121A90ACA1CA1364063D43FF3B8", decimals: 18 },
-  { symbol: "MAD", address: "0xC8527E96C3CB9522F6E35E95C0A28FEAB8144F15", decimals: 18 },
-  { symbol: "MAD-LP", address: "0x786F4AA162457ECDF8FA4657759FA3E86C9394FF", decimals: 18 },
-  { symbol: "MIST", address: "0xB38BB873CCA844B20A9EE448A87AF3626A6E1EF5", decimals: 18 },
-  { symbol: "MONDA", address: "0x0C0C92FCF37AE2CBCC512E59714CD3A1A1CBC411", decimals: 18 },
+  { symbol: "HALLI", address: "0x6Ce1890eEadaE7Db01026F4b294Cb8eC5eCc6563", decimals: 18 },
+  { symbol: "HEDGE", address: "0x04A9d9d4aEa93F512A4c7B71993915004325eD38", decimals: 18 },
+  { symbol: "JAI", address: "0xCc5B42f9D6144DfdfB6Fb3987A2A916aF902F5F8", decimals: 6 },
+  { symbol: "KEYS", address: "0x8A056Df4d7F23121A90aCa1cA1364063d43Ff3B8", decimals: 18 },
+  { symbol: "MAD", address: "0xC8527e96C3Cb9522F6E35e95C0A28FeAb8144f15", decimals: 18 },
+  { symbol: "MAD-LP", address: "0x786F4aa162457ecDF8fa4657759fa3E86C9394fF", decimals: 18 },
+  { symbol: "MIST", address: "0xB38Bb873cCA844b20A9eE448A87Af3626A6e1eF5", decimals: 18 },
+  { symbol: "MONDA", address: "0x0C0c92fcf37ae2cbcc512e59714cd3a1a1cbc411", decimals: 18 },
   { symbol: "MOON", address: "0x4AA50E8208095D9594D18E8E3008ABB811125DCE", decimals: 18 },
-  { symbol: "NOM", address: "0x43E52CBC0073CAA7C0CF6E64B576CE2D6FB14EB8", decimals: 18 },
-  { symbol: "NSTR", address: "0xC85548E0191CD34BE8092B0D42EB4E45EBA0D581", decimals: 18 },
-  { symbol: "P1", address: "0x44369AAFDD04CD9609A57EC0237884F45DD80818", decimals: 18 },
-  { symbol: "RBSD", address: "0x8A86D48C867B76FF74A36D3AF4D2F1E707B143ED", decimals: 18 },
-  { symbol: "RED", address: "0x92EAC40C98B383EA0F0EFDA747BDAC7AC891D300", decimals: 18 },
-  { symbol: "TFAT", address: "0x24D2FD6C5B29EEBD5169CC7D6E8014CD65DECD73", decimals: 18 },
-  { symbol: "USDX", address: "0xD875BA8E2CAD3C0F7E2973277C360C8D2F92B510", decimals: 6 },
-  { symbol: "USDm", address: "0xBDD352F339E27E07089039BA80029F9135F6146F", decimals: 6 },
-  { symbol: "WBTC", address: "0xCF5A6076CFA32686C0DF13ABADA2B40DEC133F1D", decimals: 8 },
-  { symbol: "WETH", address: "0xB5A30B0FDC5EA94A52FDC42E3E9760CB8449FB37", decimals: 18 },
-  { symbol: "WMON", address: "0x760AFE86E5DE5FA0EE542FC7B7B713E1C5425701", decimals: 18 },
-  { symbol: "WSOL", address: "0x5387C85A4965769F6B0DF430638A1388493486F1", decimals: 9 },
-  { symbol: "YAKI", address: "0xFE140E1DCE99BE9F4F15D657CD9B7BF622270C50", decimals: 18 },
-  { symbol: "aprMON", address: "0xB2F82D0F38DC453D596AD40A37799446CC89274A", decimals: 18 },
-  { symbol: "gMON", address: "0xAEEF2F6B429CB59C9B2D7BB2141ADA993E8571C3", decimals: 18 },
-  { symbol: "iceMON", address: "0xCEB564775415B524640D9F688278490A7F3EF9CD", decimals: 18 },
-  { symbol: "mamaBTC", address: "0x3B428DF09C3508D884C30266AC1577F099313CF6", decimals: 8 },
-  { symbol: "muBOND", address: "0x0EFED4D9FB7863CCC7BB392847C08DCD00FE9BE2", decimals: 18 },
-  { symbol: "sMON", address: "0xE1D2439B75FB9746E7BC6CB777AE10AA7F7EF9C5", decimals: 18 },
-  { symbol: "shMON", address: "0x3A98250F98DD388C211206983453837C8365BDC1", decimals: 18 },
-  { symbol: "stMON", address: "0x199C0DA6F291A897302300AAAE4F20D139162916", decimals: 18 },
+  { symbol: "NOM", address: "0x43e52cBc0073cAa7c0cF6e64b576cE2d6Fb14eB8", decimals: 18 },
+  { symbol: "NSTR", address: "0xC85548e0191cd34be8092b0d42eb4e45eba0d581", decimals: 18 },
+  { symbol: "P1", address: "0x44369aafdd04cd9609a57ec0237884f45dd80818", decimals: 18 },
+  { symbol: "RBSD", address: "0x8A86d48c867b76ff74a36d3af4d2f1e707b143ed", decimals: 18 },
+  { symbol: "RED", address: "0x92eac40c98b383ea0f0efda747bdac7ac891d300", decimals: 18 },
+  { symbol: "TFAT", address: "0x24d2fd6c5b29eebd5169cc7d6e8014cd65decd73", decimals: 18 },
+  { symbol: "USDX", address: "0xD875bA8e2cAD3c0F7E2973277C360c8d2F92b510", decimals: 6 },
+  { symbol: "USDm", address: "0xBdd352f339e27e07089039ba80029f9135f6146f", decimals: 6 },
+  { symbol: "WBTC", address: "0xCf5A6076cfa32686c0df13abada2b40dec133f1d", decimals: 8 },
+  { symbol: "WETH", address: "0xB5A30b0fdc5ea94a52fdc42e3e9760cb8449fb37", decimals: 18 },
+  { symbol: "WMON", address: "0x760afe86e5de5fa0ee542fc7b7b713e1c5425701", decimals: 18 },
+  { symbol: "WSOL", address: "0x5387c85a4965769f6b0df430638a1388493486f1", decimals: 9 },
+  { symbol: "YAKI", address: "0xFe140e1dce99be9f4f15d657cd9b7bf622270c50", decimals: 18 },
+  { symbol: "aprMON", address: "0xB2f82d0f38dc453d596ad40a37799446cc89274a", decimals: 18 },
+  { symbol: "gMON", address: "0xAeef2f6b429cb59c9b2d7bb2141ada993e8571c3", decimals: 18 },
+  { symbol: "iceMON", address: "0xCeb564775415b524640d9f688278490a7f3ef9cd", decimals: 18 },
+  { symbol: "mamaBTC", address: "0x3b428df09c3508d884c30266ac1577f099313cf6", decimals: 8 },
+  { symbol: "muBOND", address: "0x0efed4d9fb7863ccc7bb392847c08dcd00fe9be2", decimals: 18 },
+  { symbol: "sMON", address: "0xE1d2439b75fb9746e7bc6cb777ae10aa7f7ef9c5", decimals: 18 },
+  { symbol: "shMON", address: "0x3a98250f98dd388c211206983453837c8365bdc1", decimals: 18 },
+  { symbol: "stMON", address: "0x199c0da6f291a897302300aaae4f20d139162916", decimals: 18 },
 ];
 
 const TOKENS = RAW_TOKENS.map(t =>
@@ -148,44 +148,59 @@ export default function Home() {
 
   const MONAD_TESTNET_ID = 10143;
 
-  // Helper to fetch balances for both wallets using Alchemy batch endpoint
+  // Helper to fetch balances from the route API
   const fetchAllBalances = async (montipAddress: string, loginAddress?: string) => {
-    const addresses = [
-      { address: montipAddress, networks: ["monad-testnet"] },
-    ];
-    if (loginAddress) {
-      addresses.push({ address: loginAddress, networks: ["monad-testnet"] });
+    // Helper to fetch balances from the route API
+    async function fetchBalances(address: string) {
+      const response = await fetch("/api/get-balances", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address }),
+      });
+      return response.json();
     }
-    const response = await fetch("https://api.g.alchemy.com/data/v1/ClXqqWvrb6dzy32jRH4jzOfqEReo3T7h/assets/tokens/balances/by-address", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ addresses, includeNativeTokens: true }),
-    });
-    const body = await response.json();
-    const tokensArr = body?.data?.tokens || [];
+
+    // Fetch Montip wallet balances
+    const montipData = await fetchBalances(montipAddress);
+    // Fetch login wallet balances if provided
+    let loginData = null;
+    if (loginAddress) {
+      loginData = await fetchBalances(loginAddress);
+    }
+
+    // Parse balances for both wallets
     const montip: Record<string, string> = {};
     const login: Record<string, string> = {};
+    const TOKENS = RAW_TOKENS.map(t => t.address ? { ...t, address: getAddress(t.address) } : t);
+
+    // Helper to parse token balances
+    function parseTokenBalances(tokensArr: any[], target: Record<string, string>) {
       for (const tokenObj of tokensArr) {
-      const isMontip = tokenObj.address.toLowerCase() === montipAddress.toLowerCase();
-      const isLogin = loginAddress && tokenObj.address.toLowerCase() === loginAddress.toLowerCase();
-      // Find token meta
-      let symbol = "MON";
-      let decimals = 18;
-      if (tokenObj.tokenAddress) {
+        let symbol = "MON";
+        let decimals = 18;
+        if (tokenObj.tokenAddress) {
           const token = TOKENS.find(
-          (t) => t.address && t.address.toLowerCase() === tokenObj.tokenAddress.toLowerCase()
+            (t) => t.address && t.address.toLowerCase() === tokenObj.tokenAddress.toLowerCase()
           );
           if (token) {
-          symbol = token.symbol;
-          decimals = token.decimals;
-        } else {
-          continue; // skip unknown tokens
+            symbol = token.symbol;
+            decimals = token.decimals;
+          } else {
+            continue; // skip unknown tokens
+          }
         }
+        const value = (parseInt(tokenObj.tokenBalance, 16) / 10 ** decimals).toFixed(4);
+        target[symbol] = value;
       }
-      const value = (parseInt(tokenObj.tokenBalance, 16) / 10 ** decimals).toFixed(4);
-      if (isMontip) montip[symbol] = value;
-      if (isLogin) login[symbol] = value;
     }
+
+    if (montipData?.data?.tokens) {
+      parseTokenBalances(montipData.data.tokens, montip);
+    }
+    if (loginData?.data?.tokens) {
+      parseTokenBalances(loginData.data.tokens, login);
+    }
+
     setMontipBalances(montip);
     setLoginWalletBalances(login);
   };
@@ -260,7 +275,11 @@ export default function Home() {
     if (!walletAddress) return;
     setPolling(true);
     console.log("[MiniApp] Manual balance update triggered");
-    fetchAllBalances(walletAddress).finally(() => setPolling(false));
+    if (isConnected && address) {
+      fetchAllBalances(walletAddress, address).finally(() => setPolling(false));
+    } else {
+      fetchAllBalances(walletAddress).finally(() => setPolling(false));
+    }
   };
 
   // Replace handleCreate with API call
@@ -344,6 +363,8 @@ export default function Home() {
   }, [depositToken]);
 
   const handleDeposit = async () => {
+    console.log("[DEBUG] Deposit token object:", depositToken);
+    console.log("[DEBUG] Deposit amount:", depositAmount);
     setIsDepositing(true);
     setDepositError(null);
     setDepositSuccess(null);
@@ -372,15 +393,14 @@ export default function Home() {
       }
       if (depositToken.symbol === "MON") {
         try {
+          console.log("[DEBUG] Sending native MON deposit", { to: walletAddress, value: depositAmount });
           sendTransaction({
             to: walletAddress as `0x${string}`,
             value: parseEther(depositAmount),
             gas: BigInt(25000),
           });
-          // Success message will be handled in the txHash effect
-          // No need to wait for receipt or check tx.hash here
-          // No inline note about MON fee
         } catch (err: any) {
+          console.error("[DEBUG] MON deposit error:", err);
           if (err?.message?.toLowerCase().includes("user rejected")) {
             setDepositError("You rejected the transaction.");
           } else if (err?.message?.toLowerCase().includes("insufficient funds")) {
@@ -408,19 +428,23 @@ export default function Home() {
               setIsDepositing(false);
               return;
             }
+            console.log("[DEBUG] ERC20 deposit contract address:", checksummedAddress);
+            const amountWei = parseUnits(depositAmount, depositToken.decimals);
+            console.log("[DEBUG] ERC20 deposit amount (wei):", amountWei.toString());
             const tx = await writeContractAsync({
               address: checksummedAddress,
               abi: erc20Abi,
               functionName: "transfer",
-              args: [walletAddress as `0x${string}`, BigInt(String(Math.floor(Number(depositAmount) * 10 ** depositToken.decimals)))]
+              args: [walletAddress as `0x${string}`, amountWei]
             });
+            console.log("[DEBUG] ERC20 deposit tx hash:", tx);
             if (tx) {
-              // Wait for confirmation
               await publicClient.waitForTransactionReceipt({ hash: tx });
               setDepositSuccess("Deposit successful!");
               refreshBalances();
             }
           } catch (err: any) {
+            console.error("[DEBUG] ERC20 deposit error:", err);
             if (err?.message?.toLowerCase().includes("user rejected")) {
               setDepositError("You rejected the transaction.");
             } else if (err?.message?.toLowerCase().includes("insufficient funds")) {
@@ -434,6 +458,7 @@ export default function Home() {
         }
       }
     } catch (err: any) {
+      console.error("[DEBUG] Deposit outer error:", err);
       setDepositError("Deposit failed: Please try again");
     }
     setIsDepositing(false);
@@ -447,6 +472,8 @@ export default function Home() {
 
   // Withdraw handler
   const handleWithdraw = async () => {
+    console.log("[DEBUG] Withdraw token object:", withdrawToken);
+    console.log("[DEBUG] Withdraw amount:", withdrawAmount);
     setIsWithdrawing(true);
     setWithdrawError(null);
     setWithdrawSuccess(null);
@@ -457,6 +484,7 @@ export default function Home() {
         return;
       }
       const toAddr = withdrawToOther ? withdrawOtherAddress : address;
+      console.log("[DEBUG] Withdraw recipient address:", toAddr);
       if (!toAddr) {
         setWithdrawError("No recipient address");
         setIsWithdrawing(false);
@@ -484,6 +512,7 @@ export default function Home() {
         }),
       });
       const data = await res.json();
+      console.log("[DEBUG] Withdraw backend response:", data);
       if (!res.ok) {
         if (data.error?.toLowerCase().includes("insufficient funds")) {
           setWithdrawError("Insufficient funds: Not enough balance");
@@ -495,9 +524,16 @@ export default function Home() {
       } else {
         setWithdrawSuccess("Withdraw successful!");
         setWithdrawAmount("");
-        refreshBalances();
+        // Wait for transaction confirmation before refreshing balances
+        try {
+          await publicClient.waitForTransactionReceipt({ hash: data.txHash });
+          refreshBalances();
+        } catch (e) {
+          // Optionally handle error
+        }
       }
     } catch (err: any) {
+      console.error("[DEBUG] Withdraw error:", err);
       setWithdrawError("Withdraw failed: Please try again");
     }
     setIsWithdrawing(false);
@@ -513,12 +549,58 @@ export default function Home() {
   // No custom splash logic; rely on Warpcast SDK splash
   if (loading) return null;
 
+  const bannerText = (
+    <>
+      To tip, <b>reply to a cast</b> with <b>!montip tip 2 MON</b> (replace 2 and MON as needed). &nbsp;|&nbsp;
+      <b>Deposit</b> tokens to your Montip wallet to start tipping. &nbsp;|&nbsp;
+      <b>Withdraw</b> tokens to your own wallet anytime. &nbsp;|&nbsp;
+      You can tip friends in any supported token! &nbsp;|&nbsp;
+      Tap the <b style={{color: '#fff', fontWeight: 700, fontSize: 15}}>?</b> at the bottom right to learn more.
+    </>
+  );
+
   return (
     <div className="min-h-screen h-full w-full flex flex-col items-center justify-start" style={{
       background: "linear-gradient(135deg, #5b4dcf 0%, #a280ff 100%)",
       minHeight: "100vh"
     }}>
       <SplashScreen />
+      
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: 24,
+        overflow: 'hidden',
+        background: 'rgba(0,0,0,0.10)',
+        zIndex: 10,
+        display: 'flex',
+        alignItems: 'center',
+        pointerEvents: 'none',
+      }}>
+        <div style={{
+          display: 'inline-block',
+          whiteSpace: 'nowrap',
+          animation: 'marquee 38s linear infinite',
+          fontSize: 13,
+          color: '#fff',
+          fontWeight: 500,
+          letterSpacing: 0.5,
+          paddingLeft: 12,
+          pointerEvents: 'auto',
+        }}>
+          {bannerText}
+          <span style={{display: 'inline-block', width: 400}}></span>
+          {bannerText}
+        </div>
+      </div>
+      <style>{`
+      @keyframes marquee {
+        0% { transform: translateX(0%); }
+        100% { transform: translateX(-100%); }
+      }
+      `}</style>
       
       {/* Top bar: product name, username, fid left; wallet right */}
       <div className="w-full flex flex-row items-center justify-between pt-6 pb-2 px-4">
@@ -590,8 +672,8 @@ export default function Home() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                     </svg>
                   ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m2.25-2.25V6.75A2.25 2.25 0 0015.75 4.5h-7.5A2.25 2.25 0 006 6.75v10.5A2.25 2.25 0 008.25 19.5h6.5A2.25 2.25 0 0017 17.25v-2.25" />
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h5M20 20v-5h-5M5.07 19A9 9 0 1 1 21 12.93"/>
                     </svg>
                   )}
         </button>
@@ -662,8 +744,22 @@ export default function Home() {
                       </select>
                     </div>
                     {/* Show connected wallet balance for selected token */}
-                    <div className="w-full mb-2 text-right text-xs text-white/80">
-                      Balance: {loginWalletBalances[depositToken.symbol] ? Number(loginWalletBalances[depositToken.symbol]).toFixed(4) : '0.0000'} {depositToken.symbol}
+                    <div className="w-full mb-2 text-right text-xs text-white/80 flex items-center justify-end gap-1">
+                      <span>
+                        Balance: {loginWalletBalances[depositToken.symbol] ? Number(loginWalletBalances[depositToken.symbol]).toFixed(4) : '0.0000'} {depositToken.symbol}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleUpdateBalances}
+                        title="Refresh balance"
+                        style={{ padding: 0, marginLeft: 4, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', height: 18 }}
+                        className={`hover:opacity-80 focus:outline-none ${polling ? 'animate-spin' : ''}`}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.65 6.35A8 8 0 1 0 19 12h-1.5"/>
+                          <polyline points="19 4 19 12 11 12"/>
+                        </svg>
+                      </button>
                     </div>
                     <div className="w-full mb-4 relative">
                       <input
@@ -679,7 +775,14 @@ export default function Home() {
                         type="button"
                         className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 text-black text-xs font-bold px-3 py-1 rounded shadow hover:bg-white"
                         style={{ zIndex: 2 }}
-                        onClick={() => setDepositAmount(loginWalletBalances[depositToken.symbol] || "")}
+                        onClick={() => {
+                          const bal = loginWalletBalances[depositToken.symbol] ? Number(loginWalletBalances[depositToken.symbol]) : 0;
+                          if (depositToken.symbol === "MON") {
+                            setDepositAmount(bal > 0.002 ? (bal - 0.002).toFixed(4) : "0");
+                          } else {
+                            setDepositAmount(bal.toFixed(4));
+                          }
+                        }}
                       >
                         Max
                       </button>
@@ -784,8 +887,22 @@ export default function Home() {
                         ))}
                       </select>
                     </div>
-                    <div className="w-full mb-2 text-right text-xs text-white/80">
-                      Balance: {montipBalances[withdrawToken.symbol] ? Number(montipBalances[withdrawToken.symbol]).toFixed(4) : '0.0000'} {withdrawToken.symbol}
+                    <div className="w-full mb-2 text-right text-xs text-white/80 flex items-center justify-end gap-1">
+                      <span>
+                        Balance: {montipBalances[withdrawToken.symbol] ? Number(montipBalances[withdrawToken.symbol]).toFixed(4) : '0.0000'} {withdrawToken.symbol}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleUpdateBalances}
+                        title="Refresh balance"
+                        style={{ padding: 0, marginLeft: 4, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', height: 18 }}
+                        className={`hover:opacity-80 focus:outline-none ${polling ? 'animate-spin' : ''}`}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.65 6.35A8 8 0 1 0 19 12h-1.5"/>
+                          <polyline points="19 4 19 12 11 12"/>
+                        </svg>
+                      </button>
                     </div>
                     <div className="w-full mb-4 relative">
                       <input
@@ -804,7 +921,7 @@ export default function Home() {
                         onClick={() => {
                           const bal = montipBalances[withdrawToken.symbol] ? Number(montipBalances[withdrawToken.symbol]) : 0;
                           if (withdrawToken.symbol === "MON") {
-                            setWithdrawAmount(bal > 0.008 ? (bal - 0.008).toFixed(4) : "0");
+                            setWithdrawAmount(bal > 0.0081 ? (bal - 0.0081).toFixed(4) : "0");
                           } else {
                             setWithdrawAmount(bal.toFixed(4));
                           }
