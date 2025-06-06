@@ -36,52 +36,30 @@ export default function HelpButton() {
               </div>
               
               <div className="space-y-4 text-gray-700">
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">1. Create Your Wallet</h3>
-                  <p>Click &quot;Create Wallet&quot; to set up your Montip smart wallet. This only needs to be done once for your Farcaster account.</p>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">2. Manage Your Funds</h3>
-                  <ul className="list-disc pl-5 mt-2">
-                    <li>Send tokens directly to your Montip wallet address</li>
-                    <li>Use the Deposit tab to send from your connected wallet</li>
-                    <li>Use the Withdraw tab to send to any address</li>
-                    <li>Click &quot;Update Balances&quot; to refresh your balance</li>
-                    <li>View all your balances in the Assets tab</li>
-                  </ul>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">3. Send Tips</h3>
-                  <p>Reply to a cast with one of these formats:</p>
-                  <ul className="list-disc pl-5 mt-2">
-                    <li>!montip tip 10 MON</li>
-                    <li>!montip tip 10 $mon</li>
-                  </ul>
-                  <p className="mt-1 text-sm text-gray-500">Tip using the token symbol or $token (e.g., MON or $mon).</p>
-                </div>
-
+                <ol className="list-decimal pl-5 space-y-2">
+                  <li>
+                    <span className="font-bold">Create Wallet:</span> Set up your Montip wallet (one-time) to start tipping.
+                  </li>
+                  <li>
+                    <span className="font-bold">Deposit:</span> Send tokens to your Montip wallet or use the Deposit tab.
+                  </li>
+                  <li>
+                    <span className="font-bold">Tip:</span> Reply to any cast with <span className="font-mono bg-gray-100 px-1 rounded">!montip tip 1 mon</span> to send MON instantly.
+                  </li>
+                  <li>
+                    <span className="font-bold">Withdraw:</span> Use the Withdraw tab to send tokens to any address.
+                  </li>
+                </ol>
                 <div>
                   <h3 className="font-semibold text-lg mb-2">Supported Tokens</h3>
-                  <p>MON, USDC, USDT, BEAN, BMONAD, CHOG, DAK, HALLI, HEDGE, JAI, KEYS, MAD, MIST, MONDA, MOON, NOM, NSTR, P1, RBSD, RED, TFAT, USDX, USDm, WBTC, WETH, WMON, WSOL, YAKI, aprMON, gMON, iceMON, mamaBTC, muBOND, sMON, shMON, stMON</p>
+                  <p>MON, USDC, USDT, BEAN, BMONAD, CHOG, DAK, HALLI, HEDGE, JAI, KEYS, MAD, MAD-LP, MIST, MONDA, MOON, NOM, NSTR, P1, RBSD, RED, TFAT, USDX, USDm, WBTC, WETH, WMON, WSOL, YAKI, aprMON, gMON, iceMON, mamaBTC, muBOND, sMON, shMON, stMON</p>
                 </div>
-
                 <div>
-                  <h3 className="font-semibold text-lg mb-2">Fee Structure</h3>
+                  <h3 className="font-semibold text-lg mb-2">Fees</h3>
                   <ul className="list-disc pl-5 mt-2">
-                    <li>Each tip includes a fixed fee of <span className="font-bold">0.008 MON</span></li>
-                    <li>Each withdraw includes a fixed fee of <span className="font-bold">0.008 MON</span></li>
-                    <li>Fees cover gas and operational costs</li>
+                    <li>Each tip: <span className="font-bold">0.008 MON</span></li>
+                    <li>Each withdraw: <span className="font-bold">0.008 MON</span></li>
                   </ul>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">Future Updates</h3>
-                  <ul className="list-disc pl-5 mt-2">
-                    <li><span className="font-bold">Tip Events:</span> Special events where both top tippers and recipients can earn rewards (stay tuned!).</li>
-                    <li>And more features to make tipping even easier!</li>
-                  </ul> 
                 </div>
               </div>
             </div>
