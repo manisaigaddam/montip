@@ -84,7 +84,8 @@ export default function Home() {
   const [balances, setBalances] = useState<Record<string, string>>({});
   const [polling, setPolling] = useState(false);
   const [creationError, setCreationError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'assets' | 'deposit' | 'withdraw'>('assets');
+  const [activeMainTab, setActiveMainTab] = useState<'wallet' | 'settings'>('wallet');
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'deposit' | 'withdraw'>('deposit');
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const fid = context?.user?.fid;
   const username = context?.user?.username || "-";
@@ -171,7 +172,6 @@ export default function Home() {
     // Parse balances for both wallets
     const montip: Record<string, string> = {};
     const login: Record<string, string> = {};
-    const TOKENS = RAW_TOKENS.map(t => t.address ? { ...t, address: getAddress(t.address) } : t);
 
     // Helper to parse token balances
     function parseTokenBalances(tokensArr: any[], target: Record<string, string>) {
@@ -205,29 +205,24 @@ export default function Home() {
     setLoginWalletBalances(login);
   };
 
-  // On initial load, fetch only Montip wallet balances
-  useEffect(() => {
-    if (!walletAddress) return;
-    fetchAllBalances(walletAddress);
-  }, [walletAddress]);
-
   // After wallet connect, fetch both
   useEffect(() => {
     if (!walletAddress) return;
     if (!isConnected || !address) return;
+    // Only trigger for manual wallet connect
     fetchAllBalances(walletAddress, address);
-  }, [walletAddress, isConnected, address]);
+  }, [isConnected, address]); // Only depend on connection changes
 
-  // On Assets tab, always fetch both if connected
+  // On Wallet tab, always fetch both if connected
   useEffect(() => {
-    if (activeTab === 'assets' && walletAddress) {
+    if (activeMainTab === 'wallet' && walletAddress) {
       if (isConnected && address) {
         fetchAllBalances(walletAddress, address);
       } else {
         fetchAllBalances(walletAddress);
       }
     }
-  }, [activeTab, walletAddress, isConnected, address]);
+  }, [activeMainTab, walletAddress, isConnected, address]);
 
   // After deposit/withdraw, re-fetch both
   const refreshBalances = () => {
@@ -311,9 +306,7 @@ export default function Home() {
           args: [BigInt(fid)],
         });
         setWalletAddress(address as string);
-        if (address && address !== '0x0000000000000000000000000000000000000000') {
-          await fetchAllBalances(address as string);
-        }
+        // Wallet tab effect will handle the balance fetch
       }, 2000);
     } catch (e: any) {
       console.error("[MiniApp] Error creating wallet:", e);
@@ -549,68 +542,35 @@ export default function Home() {
   // No custom splash logic; rely on Warpcast SDK splash
   if (loading) return null;
 
-  const bannerText = (
-    <>
-      To tip, <b>reply to a cast</b> with <b>!montip tip 2 MON</b> (replace 2 and MON as needed). &nbsp;|&nbsp;
-      <b>Deposit</b> tokens to your Montip wallet to start tipping. &nbsp;|&nbsp;
-      <b>Withdraw</b> tokens to your own wallet anytime. &nbsp;|&nbsp;
-      You can tip friends in any supported token! &nbsp;|&nbsp;
-      Tap the <b style={{color: '#fff', fontWeight: 700, fontSize: 15}}>?</b> at the bottom right to learn more.
-    </>
-  );
-
   return (
     <div className="min-h-screen h-full w-full flex flex-col items-center justify-start" style={{
       background: "linear-gradient(135deg, #5b4dcf 0%, #a280ff 100%)",
       minHeight: "100vh"
     }}>
       <SplashScreen />
-      
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: 24,
-        overflow: 'hidden',
-        background: 'rgba(0,0,0,0.10)',
-        zIndex: 10,
-        display: 'flex',
-        alignItems: 'center',
-        pointerEvents: 'none',
-      }}>
-        <div style={{
-          display: 'inline-block',
-          whiteSpace: 'nowrap',
-          animation: 'marquee 38s linear infinite',
-          fontSize: 13,
-          color: '#fff',
-          fontWeight: 500,
-          letterSpacing: 0.5,
-          paddingLeft: 12,
-          pointerEvents: 'auto',
-        }}>
-          {bannerText}
-          <span style={{display: 'inline-block', width: 400}}></span>
-          {bannerText}
-        </div>
-      </div>
-      <style>{`
-      @keyframes marquee {
-        0% { transform: translateX(0%); }
-        100% { transform: translateX(-100%); }
-      }
-      `}</style>
-      
-      {/* Top bar: product name, username, fid left; wallet right */}
+
+      {/* Top bar: product name, username, fid left; wallet right in Settings tab */}
       <div className="w-full flex flex-row items-center justify-between pt-6 pb-2 px-4">
         <div className="flex flex-col items-start">
           <span className="text-white font-extrabold text-xl tracking-widest uppercase mb-1">MONTIP</span>
-          <div className="text-lg text-white font-bold tracking-wide font-sans">@{username}</div>
-          <div className="text-sm text-indigo-100 font-medium">FID: {fid ?? "-"}</div>
+          {/* Show smaller username and FID in top-right corner of Wallet tab */}
+          {activeMainTab === 'wallet' && (
+            <div className="absolute top-4 right-4 flex flex-col items-end">
+              <div className="text-base text-white font-semibold tracking-wide font-sans">@{username}</div>
+              <div className="text-xs text-indigo-100 font-medium">FID: {fid ?? "-"}</div>
+            </div>
+          )}
         </div>
-        <div className="flex flex-col items-end">
-          {isConnected ? (
+        {/* Show Connect Wallet or address/disconnect in Settings tab top right */}
+        {activeMainTab === 'settings' && (
+          !isConnected ? (
+            <button
+              onClick={() => connect({ connector: farcasterFrame() })}
+              className="bg-white text-black px-4 py-1 rounded text-sm hover:bg-white/90"
+            >
+              Connect Wallet
+            </button>
+          ) : (
             <div className="flex flex-row items-center space-x-2">
               <div className="flex flex-col items-start">
                 <span className="text-white text-sm">{shortenAddress(address || '')}</span>
@@ -623,342 +583,329 @@ export default function Home() {
                 Disconnect
               </button>
             </div>
-          ) : (
-            <button
-              onClick={() => connect({ connector: farcasterFrame() })}
-              className="bg-white text-black px-4 py-1 rounded text-sm hover:bg-white/90"
-            >
-              Connect Wallet
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Tab Navigation */}
-      <div className="w-full max-w-lg px-4 mb-2">
-        <div className="flex space-x-2 bg-white/10 rounded-lg p-1">
-          {(['assets', 'deposit', 'withdraw'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                activeTab === tab
-                  ? 'bg-white text-black'
-                  : 'text-white hover:bg-white/10'
-              }`}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-          </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Tab Content */}
-      <div className="w-full max-w-lg px-4 flex-1 flex flex-col justify-center items-center">
-        {activeTab === 'assets' && (
-          <>
-            {/* Wallet address with copy icon */}
-            {walletAddress && (
-              <div className="flex items-center justify-between bg-white/20 rounded-xl px-4 py-2 mb-2">
-                <span className="font-bold text-white mr-2">Montip Wallet</span>
-                <span className="font-mono text-xs text-white mr-2">{shortenAddress(walletAddress)}</span>
-                <button
-                  onClick={handleCopy}
-                  className="text-white bg-indigo-500 hover:bg-indigo-600 rounded p-1"
-                  title={copied ? "Copied!" : "Copy address"}
-                >
-                  {copied ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h5M20 20v-5h-5M5.07 19A9 9 0 1 1 21 12.93"/>
-                    </svg>
-                  )}
-        </button>
-              </div>
-      )}
-            {/* Tokens List Block fills available height with scroll inside */}
-            <div className="flex flex-col flex-1 w-full max-w-lg pb-6">
-        {walletAddress && (
-                <div className="bg-white border border-gray-200 rounded-2xl px-6 py-4 w-full flex-1 flex flex-col">
-            <div className="text-lg font-bold text-gray-700 mb-2 text-center">Tokens</div>
-                  <div className="flex-1 min-h-0 overflow-y-auto flex flex-col" style={{ maxHeight: '260px', overflowY: 'auto' }}>
-                    {Object.entries(montipBalances).map(([symbol, balance], idx, arr) => (
-                <div
-                  key={symbol}
-                        className={`flex flex-row items-center justify-between px-2 py-3 ${
-                          idx < arr.length - 1 ? 'border-b border-gray-200' : ''
-                        }`}
-                >
-                  <span className="font-mono text-base text-gray-900 font-bold">{symbol}</span>
-                  <span className="font-mono text-lg font-bold text-gray-900">{balance}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          )
         )}
       </div>
+
+      {/* Info message for wallet tab: what Montip does and how to use it */}
+      {activeMainTab === 'wallet' && (
+        <div className="w-full flex flex-col items-center mt-2 mb-4 px-6">
+          <div className="bg-white/10 text-white text-center text-base rounded-xl px-4 py-3 max-w-xl shadow-sm">
+            To tip, reply to any cast with <span className="font-mono bg-white/20 px-1 rounded">!montip tip 1 mon</span> to instantly send MON to that user. For more details, tap on
+            <span className="inline-block align-middle ml-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline w-5 h-5 text-white/80">
+                <circle cx="12" cy="12" r="10" />
+                <text x="12" y="16" textAnchor="middle" fontSize="12" fill="currentColor" fontFamily="monospace" fontWeight="bold">?</text>
+              </svg>
+            </span>
+            .
+          </div>
+        </div>
+      )}
+
+      {/* Main Content Area */}
+      <div className="w-full max-w-lg px-4 flex-1 flex flex-col justify-center items-center pb-20">
+        {activeMainTab === 'wallet' && (
+          <>
+            {/* Tokens List Block - restore vertical scroll */}
+            <div className="flex flex-col flex-1 w-full max-w-lg">
+              {walletAddress && (
+                <div className="bg-white border border-gray-200 rounded-2xl px-6 py-4 w-full flex-1 flex flex-col mt-08">
+                  {/* Improved Montip Wallet address and copy button as header */}
+                  <div className="flex items-center justify-between mb-4 bg-indigo-50 rounded-xl px-3 py-2" style={{ boxShadow: '0 1px 4px 0 rgba(80,80,180,0.06)' }}>
+                    <span className="font-bold text-indigo-700 mr-2">Montip Wallet</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs text-indigo-700">{shortenAddress(walletAddress)}</span>
+                      <button
+                        onClick={handleCopy}
+                        className="text-indigo-700 bg-indigo-100 hover:bg-indigo-200 rounded p-1 border border-indigo-200"
+                        title={copied ? "Copied!" : "Copy address"}
+                        style={{ transition: 'background 0.2s' }}
+                      >
+                        {copied ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                          </svg>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h5M20 20v-5h-5M5.07 19A9 9 0 1 1 21 12.93" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex-1 min-h-0 overflow-y-auto flex flex-col" style={{ maxHeight: '260px', overflowY: 'auto' }}>
+                    {Object.entries(montipBalances).map(([symbol, balance], idx, arr) => (
+                      <div
+                        key={symbol}
+                        className={`flex flex-row items-center justify-between px-2 py-3 ${idx < arr.length - 1 ? 'border-b border-gray-200' : ''
+                          }`}
+                      >
+                        <span className="font-mono text-base text-gray-900 font-bold">{symbol}</span>
+                        <span className="font-mono text-lg font-bold text-gray-900">{balance}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </>
         )}
 
-        {activeTab === 'deposit' && (
-          <div className="flex justify-center items-center w-full flex-1">
-            <div className="bg-white/20 border border-white/30 shadow-xl rounded-2xl p-4 w-full max-w-[370px] flex flex-col items-center justify-start">
-              <div className="w-full">
-                {!isConnected ? (
-                  <div className="flex flex-col items-center justify-center w-full py-8">
-                    <button
-                      onClick={() => connect({ connector: farcasterFrame() })}
-                      className="bg-white text-black px-6 py-2 rounded text-lg font-bold hover:bg-white/90 mb-3"
-                    >
-                      Connect Wallet
-                    </button>
-                    <div className="text-white text-center text-sm">Connect your login wallet to deposit tokens.</div>
-                  </div>
-                ) : (
-                  <>
-                    {/* From/To Wallets at the top */}
-                    <div className="w-full mb-4">
-                      <div className="text-xs text-white/80 mb-1">From connected wallet:</div>
-                      <span className="block font-mono text-xs text-white bg-black/20 rounded px-2 py-1 mb-2 break-all">
-                        {address}
-                      </span>
-                      <div className="text-xs text-white/80 mb-1">To your Montip wallet:</div>
-                      <span className="block font-mono text-xs text-white bg-black/20 rounded px-2 py-1 break-all">
-                        {walletAddress}
-                      </span>
-                    </div>
-                    <div className="w-full mb-4">
-                      <select
-                        value={depositToken.symbol}
-                        onChange={e => setDepositToken(TOKENS.find(t => t.symbol === e.target.value) || TOKENS[0])}
-                        className="w-full p-3 rounded-lg border border-gray-300 text-lg font-semibold text-gray-800 focus:outline-none"
-                      >
-                        {TOKENS.map(token => (
-                          <option key={token.symbol} value={token.symbol}>
-                            {token.symbol}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    {/* Show connected wallet balance for selected token */}
-                    <div className="w-full mb-2 text-right text-xs text-white/80 flex items-center justify-end gap-1">
-                      <span>
-                        Balance: {loginWalletBalances[depositToken.symbol] ? Number(loginWalletBalances[depositToken.symbol]).toFixed(4) : '0.0000'} {depositToken.symbol}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleUpdateBalances}
-                        title="Refresh balance"
-                        style={{ padding: 0, marginLeft: 4, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', height: 18 }}
-                        className={`hover:opacity-80 focus:outline-none ${polling ? 'animate-spin' : ''}`}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.65 6.35A8 8 0 1 0 19 12h-1.5"/>
-                          <polyline points="19 4 19 12 11 12"/>
-                        </svg>
-                      </button>
-                    </div>
-                    <div className="w-full mb-4 relative">
-                      <input
-                        type="number"
-                        min="0"
-                        step="any"
-                        value={depositAmount}
-                        onChange={e => setDepositAmount(e.target.value)}
-                        placeholder="Amount"
-                        className="w-full p-3 rounded-lg border border-gray-300 text-lg font-mono focus:outline-none pr-16"
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 text-black text-xs font-bold px-3 py-1 rounded shadow hover:bg-white"
-                        style={{ zIndex: 2 }}
-                        onClick={() => {
-                          const bal = loginWalletBalances[depositToken.symbol] ? Number(loginWalletBalances[depositToken.symbol]) : 0;
-                          if (depositToken.symbol === "MON") {
-                            setDepositAmount(bal > 0.002 ? (bal - 0.002).toFixed(4) : "0");
-                          } else {
-                            setDepositAmount(bal.toFixed(4));
-                          }
-                        }}
-                      >
-                        Max
-                      </button>
-                    </div>
-                    <button
-                      className="w-full bg-green-500 hover:bg-green-600 text-white text-lg font-bold py-3 rounded-lg transition-all duration-150 shadow mb-4"
-                      onClick={handleDeposit}
-                      disabled={isDepositing || !depositAmount || !walletAddress || !address}
-                    >
-                      {isDepositing ? "Depositing..." : `Deposit ${depositToken.symbol}`}
-                    </button>
-                    {depositSuccess && <div className="mt-2 text-green-300 text-center font-semibold">{depositSuccess}</div>}
-                    {depositError && (
-                      <div className="mt-2 text-red-300 text-center font-semibold">
-                        {depositError === 'You do not have enough balance to deposit.' && 'Insufficient balance.'}
-                        {depositError === 'Please switch to Monad Testnet to deposit.' && 'Please switch to Monad Testnet to deposit.'}
-                        {depositError === 'Please connect your wallet to deposit.' && 'Please connect your wallet to deposit.'}
-                        {depositError === 'Please enter a valid amount.' && 'Please enter a valid amount.'}
-                        {depositError === 'There was an issue with the token address. Please try again.' && 'There was an issue with the token address. Please try again.'}
-                        {depositError === 'You rejected the transaction.' && 'You rejected the transaction.'}
-                        {depositError === 'Deposit failed. Please try again.' && 'Deposit failed. Please try again.'}
-                        {/* fallback for any other error */}
-                        {![
-                          'You do not have enough balance to deposit.',
-                          'Please switch to Monad Testnet to deposit.',
-                          'Please connect your wallet to deposit.',
-                          'Please enter a valid amount.',
-                          'There was an issue with the token address. Please try again.',
-                          'You rejected the transaction.',
-                          'Deposit failed. Please try again.'
-                        ].includes(depositError) && depositError}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
+        {activeMainTab === 'settings' && (
+          <div className="w-full flex flex-col items-center">
+            {/* Settings Tab Navigation - always at the very top, separated from the card */}
+            <div className="flex space-x-2 bg-white/10 rounded-lg p-1 mb-4 w-full max-w-[370px]">
+              {(['deposit', 'withdraw'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveSettingsTab(tab)}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${activeSettingsTab === tab
+                      ? 'bg-white text-black'
+                      : 'text-white hover:bg-white/10'
+                    }`}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+              ))}
             </div>
-          </div>
-        )}
-
-        {activeTab === 'withdraw' && (
-          <div className="flex justify-center items-center w-full flex-1">
-            <div className="bg-white/20 border border-white/30 shadow-xl rounded-2xl p-4 w-full max-w-[370px] flex flex-col items-center justify-start" style={{ boxSizing: 'border-box', marginTop: '8px', marginBottom: '8px' }}>
+            {/* Card content always below tab navigation, never affects tab position */}
+            <div className="bg-white/20 border border-white/30 shadow-xl rounded-2xl p-4 w-full max-w-[370px] flex flex-col items-center justify-start" style={{ minHeight: '420px' }}>
               <div className="w-full">
-                {!isConnected ? (
-                  <div className="flex flex-col items-center justify-center w-full py-8">
+                {/* Connect wallet button below tab navigation if not connected, always show info text below */}
+                {!isConnected && (
+                  <div className="flex flex-col items-center justify-center w-full h-full min-h-[320px] flex-1">
                     <button
                       onClick={() => connect({ connector: farcasterFrame() })}
                       className="bg-white text-black px-6 py-2 rounded text-lg font-bold hover:bg-white/90 mb-3"
                     >
                       Connect Wallet
                     </button>
-                    <div className="text-white text-center text-sm">Connect your login wallet to withdraw tokens.</div>
+                    <div className="text-white text-center text-sm">Connect your login wallet to manage tokens.</div>
                   </div>
-                ) : (
+                )}
+                {isConnected && (
                   <>
-                    {/* From Montip wallet */}
-                    <div className="w-full mb-4">
-                      <div className="text-xs text-white/80 mb-1">From your Montip wallet:</div>
-                      <span className="block font-mono text-xs text-white bg-black/20 rounded px-2 py-1 break-all w-full">{walletAddress}</span>
-                    </div>
-                    {/* To login wallet (default) */}
-                    <div className="w-full mb-4">
-                      <div className="text-xs text-white/80 mb-1">Send to login wallet:</div>
-                      <span className="block font-mono text-xs text-white bg-black/20 rounded px-2 py-1 break-all">
-                        {address || "-"}
-                      </span>
-                    </div>
-                    {/* Withdraw to different wallet */}
-                    <div className="w-full mb-4 flex items-center">
-                      <input
-                        id="withdraw-different-wallet"
-                        type="checkbox"
-                        className="mr-2"
-                        checked={withdrawToOther}
-                        onChange={e => setWithdrawToOther(e.target.checked)}
-                      />
-                      <label htmlFor="withdraw-different-wallet" className="text-xs text-white/80">Withdraw to a different wallet</label>
-                    </div>
-                    {withdrawToOther && (
-                      <div className="w-full mb-4">
-                        <input
-                          type="text"
-                          value={withdrawOtherAddress}
-                          onChange={e => setWithdrawOtherAddress(e.target.value)}
-                          placeholder="Recipient address"
-                          className="w-full p-3 rounded-lg border border-gray-300 text-lg font-mono focus:outline-none"
-                        />
-                      </div>
+                    {activeSettingsTab === 'deposit' && (
+                      <>
+                        {/* From/To Wallets at the top */}
+                        <div className="w-full mb-4">
+                          <div className="text-xs text-white/80 mb-1">From connected wallet:</div>
+                          <span className="block font-mono text-xs text-white bg-black/20 rounded px-2 py-1 mb-2 break-all">
+                            {address}
+                          </span>
+                          <div className="text-xs text-white/80 mb-1">To your Montip wallet:</div>
+                          <span className="block font-mono text-xs text-white bg-black/20 rounded px-2 py-1 break-all">
+                            {walletAddress}
+                          </span>
+                        </div>
+                        <div className="w-full mb-4">
+                          <select
+                            value={depositToken.symbol}
+                            onChange={e => setDepositToken(TOKENS.find(t => t.symbol === e.target.value) || TOKENS[0])}
+                            className="w-full p-3 rounded-lg border border-gray-300 text-lg font-semibold text-gray-800 focus:outline-none"
+                          >
+                            {TOKENS.map(token => (
+                              <option key={token.symbol} value={token.symbol}>
+                                {token.symbol}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="w-full mb-2 text-right text-xs text-white/80 flex items-center justify-end gap-1">
+                          <span>
+                            Balance: {loginWalletBalances[depositToken.symbol] ? Number(loginWalletBalances[depositToken.symbol]).toFixed(4) : '0.0000'} {depositToken.symbol}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleUpdateBalances}
+                            title="Refresh balance"
+                            style={{ padding: 0, marginLeft: 4, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', height: 18 }}
+                            className={`hover:opacity-80 focus:outline-none ${polling ? 'animate-spin' : ''}`}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.65 6.35A8 8 0 1 0 19 12h-1.5" />
+                              <polyline points="19 4 19 12 11 12" />
+                            </svg>
+                          </button>
+                        </div>
+                        <div className="w-full mb-4 relative">
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            value={depositAmount}
+                            onChange={e => setDepositAmount(e.target.value)}
+                            placeholder="Amount"
+                            className="w-full p-3 rounded-lg border border-gray-300 text-lg font-mono focus:outline-none pr-16"
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 text-black text-xs font-bold px-3 py-1 rounded shadow hover:bg-white"
+                            style={{ zIndex: 2 }}
+                            onClick={() => {
+                              const bal = loginWalletBalances[depositToken.symbol] ? Number(loginWalletBalances[depositToken.symbol]) : 0;
+                              if (depositToken.symbol === "MON") {
+                                setDepositAmount(bal > 0.002 ? (bal - 0.002).toFixed(4) : "0");
+                              } else {
+                                setDepositAmount(bal.toFixed(4));
+                              }
+                            }}
+                          >
+                            Max
+                          </button>
+                        </div>
+                        <button
+                          className="w-full bg-green-500 hover:bg-green-600 text-white text-lg font-bold py-3 rounded-lg transition-all duration-150 shadow mb-4"
+                          onClick={handleDeposit}
+                          disabled={isDepositing || !depositAmount || !walletAddress || !address}
+                        >
+                          {isDepositing ? "Depositing..." : `Deposit ${depositToken.symbol}`}
+                        </button>
+                        {depositSuccess && <div className="mt-2 text-green-300 text-center font-semibold">{depositSuccess}</div>}
+                        {depositError && (
+                          <div className="mt-2 text-red-300 text-center font-semibold">
+                            {depositError === 'You do not have enough balance to deposit.' && 'Insufficient balance.'}
+                            {depositError === 'Please switch to Monad Testnet to deposit.' && 'Please switch to Monad Testnet to deposit.'}
+                            {depositError === 'Please connect your wallet to deposit.' && 'Please connect your wallet to deposit.'}
+                            {depositError === 'Please enter a valid amount.' && 'Please enter a valid amount.'}
+                            {depositError === 'There was an issue with the token address. Please try again.' && 'There was an issue with the token address. Please try again.'}
+                            {depositError === 'You rejected the transaction.' && 'You rejected the transaction.'}
+                            {depositError === 'Deposit failed. Please try again.' && 'Deposit failed. Please try again.'}
+                            {/* fallback for any other error */}
+                            {![
+                              'You do not have enough balance to deposit.',
+                              'Please switch to Monad Testnet to deposit.',
+                              'Please connect your wallet to deposit.',
+                              'Please enter a valid amount.',
+                              'There was an issue with the token address. Please try again.',
+                              'You rejected the transaction.',
+                              'Deposit failed. Please try again.'
+                            ].includes(depositError) && depositError}
+                          </div>
+                        )}
+                      </>
                     )}
-                    {/* Token select and amount */}
-                    <div className="w-full mb-4">
-                      <select
-                        value={withdrawToken.symbol}
-                        onChange={e => setWithdrawToken(TOKENS.find(t => t.symbol === e.target.value) || TOKENS[0])}
-                        className="w-full p-3 rounded-lg border border-gray-300 text-lg font-semibold text-gray-800 focus:outline-none"
-                      >
-                        {TOKENS.map(token => (
-                          <option key={token.symbol} value={token.symbol}>
-                            {token.symbol}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="w-full mb-2 text-right text-xs text-white/80 flex items-center justify-end gap-1">
-                      <span>
-                        Balance: {montipBalances[withdrawToken.symbol] ? Number(montipBalances[withdrawToken.symbol]).toFixed(4) : '0.0000'} {withdrawToken.symbol}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleUpdateBalances}
-                        title="Refresh balance"
-                        style={{ padding: 0, marginLeft: 4, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', height: 18 }}
-                        className={`hover:opacity-80 focus:outline-none ${polling ? 'animate-spin' : ''}`}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.65 6.35A8 8 0 1 0 19 12h-1.5"/>
-                          <polyline points="19 4 19 12 11 12"/>
-                        </svg>
-                      </button>
-                    </div>
-                    <div className="w-full mb-4 relative">
-                      <input
-                        type="number"
-                        min="0"
-                        step="any"
-                        value={withdrawAmount}
-                        onChange={e => setWithdrawAmount(e.target.value)}
-                        placeholder="Amount"
-                        className="w-full p-3 rounded-lg border border-gray-300 text-lg font-mono focus:outline-none pr-16"
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 text-black text-xs font-bold px-3 py-1 rounded shadow hover:bg-white"
-                        style={{ zIndex: 2 }}
-                        onClick={() => {
-                          const bal = montipBalances[withdrawToken.symbol] ? Number(montipBalances[withdrawToken.symbol]) : 0;
-                          if (withdrawToken.symbol === "MON") {
-                            setWithdrawAmount(bal > 0.0081 ? (bal - 0.0081).toFixed(4) : "0");
-                          } else {
-                            setWithdrawAmount(bal.toFixed(4));
-                          }
-                        }}
-                      >
-                        Max
-                      </button>
-                    </div>
-                    {/* Withdraw button */}
-                    <button
-                      className="w-full bg-green-500 hover:bg-green-600 text-white text-lg font-bold py-3 rounded-lg transition-all duration-150 shadow mb-4"
-                      onClick={handleWithdraw}
-                      disabled={isWithdrawing || !withdrawAmount || !walletAddress || (!address && !withdrawToOther) || Number(withdrawAmount) <= 0}
-                    >
-                      {isWithdrawing ? `Withdrawing...` : `Withdraw ${withdrawToken.symbol}`}
-                    </button>
-                    {withdrawSuccess && <div className="mt-2 text-green-300 text-center font-semibold">Withdraw successful! Your funds are on the way.</div>}
-                    {withdrawError && (
-                      <div className="mt-2 text-red-300 text-center font-semibold">
-                        {withdrawError === 'You do not have enough balance to withdraw.' && 'Insufficient balance.'}
-                        {withdrawError === 'No Montip wallet found.' && 'No Montip wallet found.'}
-                        {withdrawError === 'No recipient address provided.' && 'No recipient address provided.'}
-                        {withdrawError === 'Please enter a valid amount.' && 'Please enter a valid amount.'}
-                        {withdrawError === 'There was an issue with the address. Please try again.' && 'There was an issue with the address. Please try again.'}
-                        {withdrawError === 'You rejected the transaction.' && 'You rejected the transaction.'}
-                        {withdrawError === 'Withdraw failed. Please try again.' && 'Withdraw failed. Please try again.'}
-                        {/* fallback for any other error */}
-                        {![
-                          'You do not have enough balance to withdraw.',
-                          'No Montip wallet found.',
-                          'No recipient address provided.',
-                          'Please enter a valid amount.',
-                          'There was an issue with the address. Please try again.',
-                          'You rejected the transaction.',
-                          'Withdraw failed. Please try again.'
-                        ].includes(withdrawError) && withdrawError}
-                      </div>
+
+                    {activeSettingsTab === 'withdraw' && (
+                      <>
+                        <div className="w-full mb-4">
+                          <div className="text-xs text-white/80 mb-1">From your Montip wallet:</div>
+                          <span className="block font-mono text-xs text-white bg-black/20 rounded px-2 py-1 break-all w-full">{walletAddress}</span>
+                        </div>
+                        <div className="w-full mb-4">
+                          <div className="text-xs text-white/80 mb-1">Send to login wallet:</div>
+                          <span className="block font-mono text-xs text-white bg-black/20 rounded px-2 py-1 break-all">
+                            {address || "-"}
+                          </span>
+                        </div>
+                        <div className="w-full mb-4 flex items-center">
+                          <input
+                            id="withdraw-different-wallet"
+                            type="checkbox"
+                            className="mr-2"
+                            checked={withdrawToOther}
+                            onChange={e => setWithdrawToOther(e.target.checked)}
+                          />
+                          <label htmlFor="withdraw-different-wallet" className="text-xs text-white/80">Withdraw to a different wallet</label>
+                        </div>
+                        {withdrawToOther && (
+                          <div className="w-full mb-4">
+                            <input
+                              type="text"
+                              value={withdrawOtherAddress}
+                              onChange={e => setWithdrawOtherAddress(e.target.value)}
+                              placeholder="Recipient address"
+                              className="w-full p-3 rounded-lg border border-gray-300 text-lg font-mono focus:outline-none"
+                            />
+                          </div>
+                        )}
+                        <div className="w-full mb-4">
+                          <select
+                            value={withdrawToken.symbol}
+                            onChange={e => setWithdrawToken(TOKENS.find(t => t.symbol === e.target.value) || TOKENS[0])}
+                            className="w-full p-3 rounded-lg border border-gray-300 text-lg font-semibold text-gray-800 focus:outline-none"
+                          >
+                            {TOKENS.map(token => (
+                              <option key={token.symbol} value={token.symbol}>
+                                {token.symbol}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="w-full mb-2 text-right text-xs text-white/80 flex items-center justify-end gap-1">
+                          <span>
+                            Balance: {montipBalances[withdrawToken.symbol] ? Number(montipBalances[withdrawToken.symbol]).toFixed(4) : '0.0000'} {withdrawToken.symbol}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleUpdateBalances}
+                            title="Refresh balance"
+                            style={{ padding: 0, marginLeft: 4, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', height: 18 }}
+                            className={`hover:opacity-80 focus:outline-none ${polling ? 'animate-spin' : ''}`}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.65 6.35A8 8 0 1 0 19 12h-1.5" />
+                              <polyline points="19 4 19 12 11 12" />
+                            </svg>
+                          </button>
+                        </div>
+                        <div className="w-full mb-4 relative">
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            value={withdrawAmount}
+                            onChange={e => setWithdrawAmount(e.target.value)}
+                            placeholder="Amount"
+                            className="w-full p-3 rounded-lg border border-gray-300 text-lg font-mono focus:outline-none pr-16"
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 text-black text-xs font-bold px-3 py-1 rounded shadow hover:bg-white"
+                            style={{ zIndex: 2 }}
+                            onClick={() => {
+                              const bal = montipBalances[withdrawToken.symbol] ? Number(montipBalances[withdrawToken.symbol]) : 0;
+                              if (withdrawToken.symbol === "MON") {
+                                setWithdrawAmount(bal > 0.0081 ? (bal - 0.0081).toFixed(4) : "0");
+                              } else {
+                                setWithdrawAmount(bal.toFixed(4));
+                              }
+                            }}
+                          >
+                            Max
+                          </button>
+                        </div>
+                        <button
+                          className="w-full bg-green-500 hover:bg-green-600 text-white text-lg font-bold py-3 rounded-lg transition-all duration-150 shadow mb-4"
+                          onClick={handleWithdraw}
+                          disabled={isWithdrawing || !withdrawAmount || !walletAddress || (!address && !withdrawToOther) || Number(withdrawAmount) <= 0}
+                        >
+                          {isWithdrawing ? `Withdrawing...` : `Withdraw ${withdrawToken.symbol}`}
+                        </button>
+                        {withdrawSuccess && <div className="mt-2 text-green-300 text-center font-semibold">Withdraw successful! Your funds are on the way.</div>}
+                        {withdrawError && (
+                          <div className="mt-2 text-red-300 text-center font-semibold">
+                            {withdrawError === 'You do not have enough balance to withdraw.' && 'Insufficient balance.'}
+                            {withdrawError === 'No Montip wallet found.' && 'No Montip wallet found.'}
+                            {withdrawError === 'No recipient address provided.' && 'No recipient address provided.'}
+                            {withdrawError === 'Please enter a valid amount.' && 'Please enter a valid amount.'}
+                            {withdrawError === 'There was an issue with the address. Please try again.' && 'There was an issue with the address. Please try again.'}
+                            {withdrawError === 'You rejected the transaction.' && 'You rejected the transaction.'}
+                            {withdrawError === 'Withdraw failed. Please try again.' && 'Withdraw failed. Please try again.'}
+                            {/* fallback for any other error */}
+                            {![
+                              'You do not have enough balance to withdraw.',
+                              'No Montip wallet found.',
+                              'No recipient address provided.',
+                              'Please enter a valid amount.',
+                              'There was an issue with the address. Please try again.',
+                              'You rejected the transaction.',
+                              'Withdraw failed. Please try again.'
+                            ].includes(withdrawError) && withdrawError}
+                          </div>
+                        )}
+                      </>
                     )}
                   </>
                 )}
@@ -980,9 +927,33 @@ export default function Home() {
           </button>
         </div>
       )}
-      
+
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/10 backdrop-blur-lg border-t border-white/20">
+        <div className="max-w-lg mx-auto px-4">
+          <div className="flex justify-around py-3">
+            <button
+              onClick={() => setActiveMainTab('wallet')}
+              className={`flex flex-col items-center ${activeMainTab === 'wallet' ? 'text-white' : 'text-white/60'}`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setActiveMainTab('settings')}
+              className={`flex flex-col items-center ${activeMainTab === 'settings' ? 'text-white' : 'text-white/60'}`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <HelpButton />
     </div>
   );
 }
-
