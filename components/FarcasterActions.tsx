@@ -15,20 +15,46 @@ export function useShareStats() {
   const { context } = useMiniAppContext();
   const { actions } = useFrame();
 
-  const shareStats = ({ tipperTotal, earnerTotal, tipperTokens, earnerTokens }: ShareStatsParams) => {
+  const shareStats = async ({ tipperTotal, earnerTotal, tipperTokens, earnerTokens }: ShareStatsParams) => {
+    console.log('[CAST DEBUG] shareStats called with:', { tipperTotal, earnerTotal, tipperTokens, earnerTokens });
+    
     const username = context?.user?.username || '';
     const fid = context?.user?.fid || '';
     const pfpurl = context?.user?.pfpUrl || '';
+    
+    console.log('[CAST DEBUG] User context:', { username, fid, pfpurl });
+    console.log('[CAST DEBUG] Actions available:', !!actions);
     
     const shareUrl = `${APP_URL}/share/${fid}?username=${encodeURIComponent(username)}&tipped=${tipperTotal.toFixed(4)}&earned=${earnerTotal.toFixed(4)}&tippedTokens=${encodeURIComponent(JSON.stringify(tipperTokens))}&earnedTokens=${encodeURIComponent(JSON.stringify(earnerTokens))}&pfpurl=${encodeURIComponent(pfpurl)}`;
 
     const castMessage = `onchain tips, onchain flex.\nstart tipping, and check your stats.`;
 
+    console.log('[CAST DEBUG] Share URL:', shareUrl);
+    console.log('[CAST DEBUG] Cast message:', castMessage);
+
     if (actions) {
-      actions.composeCast({
-        text: castMessage,
-        embeds: [shareUrl],
-      });
+      console.log('[CAST DEBUG] Attempting to call actions.composeCast...');
+      try {
+        const result = await actions.composeCast({
+          text: castMessage,
+          embeds: [shareUrl],
+        });
+        console.log('[CAST DEBUG] actions.composeCast result:', result);
+        
+        if (result?.cast) {
+          console.log('[CAST DEBUG] Cast created successfully:', result.cast.hash);
+          return result;
+        } else {
+          console.log('[CAST DEBUG] User cancelled the cast or cast was null');
+          return null;
+        }
+      } catch (error) {
+        console.error('[CAST DEBUG] Error calling actions.composeCast:', error);
+        throw error;
+      }
+    } else {
+      console.error('[CAST DEBUG] No actions available - cannot cast');
+      throw new Error('No actions available - cannot cast');
     }
   };
 
@@ -50,8 +76,14 @@ export function FarcasterActions({
 }: FarcasterActionsProps) {
   const { shareStats, actions } = useShareStats();
 
-  const handleShare = () => {
-    shareStats({ tipperTotal, earnerTotal, tipperTokens, earnerTokens });
+  const handleShare = async () => {
+    try {
+      console.log('[CAST DEBUG] handleShare called');
+      const result = await shareStats({ tipperTotal, earnerTotal, tipperTokens, earnerTokens });
+      console.log('[CAST DEBUG] shareStats completed with result:', result);
+    } catch (error) {
+      console.error('[CAST DEBUG] Error in handleShare:', error);
+    }
   };
 
   return (
