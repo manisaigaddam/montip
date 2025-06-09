@@ -773,7 +773,7 @@ export default function Home() {
                   <h4 className="text-white font-semibold text-sm mb-2">🚀 How to get started:</h4>
                   <ul className="text-white/80 text-xs space-y-1">
                     <li>• Deposit tokens to your Montip wallet</li>
-                    <li>• Reply to any cast with "!montip tip amount token"</li>
+                    <li>• Reply to any cast with &quot;!montip tip amount token&quot;</li>
                     <li>• Check your profile to see tip stats and history</li>
                     <li>• For more details, click help button</li>
 
