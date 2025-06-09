@@ -1089,7 +1089,15 @@ export default function Home() {
                 <button
                   title="Share your Montip stats on Farcaster"
                   className="text-white hover:text-yellow-300 transition-colors p-2 rounded-full"
-                  onClick={() => shareStats({ tipperTotal, earnerTotal, tipperTokens, earnerTokens })}
+                  onClick={async () => {
+                    try {
+                      console.log('[CAST DEBUG] Share button clicked in Home component');
+                      const result = await shareStats({ tipperTotal, earnerTotal, tipperTokens, earnerTokens });
+                      console.log('[CAST DEBUG] Share button completed with result:', result);
+                    } catch (error) {
+                      console.error('[CAST DEBUG] Error in share button onClick:', error);
+                    }
+                  }}
                 >
                   <FaShareAlt size={22} />
                 </button>
@@ -1233,4 +1241,3 @@ export default function Home() {
     </div>
   );
 }
-
