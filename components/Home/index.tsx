@@ -18,6 +18,10 @@ import {
   useWriteContract,
 } from "wagmi";
 import { farcasterFrame } from "@farcaster/frame-wagmi-connector";
+import { APP_URL } from '@/lib/constants';
+import { useFrame } from '@/components/farcaster-provider';
+import { FaShareAlt } from 'react-icons/fa';
+import { useShareStats } from '@/components/FarcasterActions';
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS as `0x${string}`;
 
@@ -30,36 +34,36 @@ const RAW_TOKENS = [
   { symbol: "BMONAD", address: "0x3552F8254263EA8880C7F7E25CB8DBBD79C0C4B1", decimals: 18 },
   { symbol: "CHOG", address: "0xE0590015A873BF326BD645C3E1266D4DB41C4E6B", decimals: 18 },
   { symbol: "DAK", address: "0x0F0BDEBF0F83CD1EE3974779BCB7315F9808C714", decimals: 18 },
-  { symbol: "HALLI", address: "0x6Ce1890eEadaE7Db01026F4b294Cb8eC5eCc6563", decimals: 18 },
-  { symbol: "HEDGE", address: "0x04A9d9d4aEa93F512A4c7B71993915004325eD38", decimals: 18 },
-  { symbol: "JAI", address: "0xCc5B42f9D6144DfdfB6Fb3987A2A916aF902F5F8", decimals: 6 },
-  { symbol: "KEYS", address: "0x8A056Df4d7F23121A90aCa1cA1364063d43Ff3B8", decimals: 18 },
-  { symbol: "MAD", address: "0xC8527e96C3Cb9522F6E35e95C0A28FeAb8144f15", decimals: 18 },
-  { symbol: "MAD-LP", address: "0x786F4aa162457ecDF8fa4657759fa3E86C9394fF", decimals: 18 },
-  { symbol: "MIST", address: "0xB38Bb873cCA844b20A9eE448A87Af3626A6e1eF5", decimals: 18 },
-  { symbol: "MONDA", address: "0x0C0c92fcf37ae2cbcc512e59714cd3a1a1cbc411", decimals: 18 },
+  { symbol: "HALLI", address: "0x6CE1890EEADAE7DB01026F4B294CB8EC5ECC6563", decimals: 18 },
+  { symbol: "HEDGE", address: "0x04A9D9D4AEA93F512A4C7B71993915004325ED38", decimals: 18 },
+  { symbol: "JAI", address: "0xCC5B42F9D6144DFDFB6FB3987A2A916AF902F5F8", decimals: 6 },
+  { symbol: "KEYS", address: "0x8A056DF4D7F23121A90ACA1CA1364063D43FF3B8", decimals: 18 },
+  { symbol: "MAD", address: "0xC8527E96C3CB9522F6E35E95C0A28FEAB8144F15", decimals: 18 },
+  { symbol: "MAD-LP", address: "0x786F4AA162457ECDF8FA4657759FA3E86C9394FF", decimals: 18 },
+  { symbol: "MIST", address: "0xB38BB873CCA844B20A9EE448A87AF3626A6E1EF5", decimals: 18 },
+  { symbol: "MONDA", address: "0x0C0C92FCF37AE2CBCC512E59714CD3A1A1CBC411", decimals: 18 },
   { symbol: "MOON", address: "0x4AA50E8208095D9594D18E8E3008ABB811125DCE", decimals: 18 },
-  { symbol: "NOM", address: "0x43e52cBc0073cAa7c0cF6e64b576cE2d6Fb14eB8", decimals: 18 },
-  { symbol: "NSTR", address: "0xC85548e0191cd34be8092b0d42eb4e45eba0d581", decimals: 18 },
-  { symbol: "P1", address: "0x44369aafdd04cd9609a57ec0237884f45dd80818", decimals: 18 },
-  { symbol: "RBSD", address: "0x8A86d48c867b76ff74a36d3af4d2f1e707b143ed", decimals: 18 },
-  { symbol: "RED", address: "0x92eac40c98b383ea0f0efda747bdac7ac891d300", decimals: 18 },
-  { symbol: "TFAT", address: "0x24d2fd6c5b29eebd5169cc7d6e8014cd65decd73", decimals: 18 },
-  { symbol: "USDX", address: "0xD875bA8e2cAD3c0F7E2973277C360c8d2F92b510", decimals: 6 },
-  { symbol: "USDm", address: "0xBdd352f339e27e07089039ba80029f9135f6146f", decimals: 6 },
-  { symbol: "WBTC", address: "0xCf5A6076cfa32686c0df13abada2b40dec133f1d", decimals: 8 },
-  { symbol: "WETH", address: "0xB5A30b0fdc5ea94a52fdc42e3e9760cb8449fb37", decimals: 18 },
-  { symbol: "WMON", address: "0x760afe86e5de5fa0ee542fc7b7b713e1c5425701", decimals: 18 },
-  { symbol: "WSOL", address: "0x5387c85a4965769f6b0df430638a1388493486f1", decimals: 9 },
-  { symbol: "YAKI", address: "0xFe140e1dce99be9f4f15d657cd9b7bf622270c50", decimals: 18 },
-  { symbol: "aprMON", address: "0xB2f82d0f38dc453d596ad40a37799446cc89274a", decimals: 18 },
-  { symbol: "gMON", address: "0xAeef2f6b429cb59c9b2d7bb2141ada993e8571c3", decimals: 18 },
-  { symbol: "iceMON", address: "0xCeb564775415b524640d9f688278490a7f3ef9cd", decimals: 18 },
-  { symbol: "mamaBTC", address: "0x3b428df09c3508d884c30266ac1577f099313cf6", decimals: 8 },
-  { symbol: "muBOND", address: "0x0efed4d9fb7863ccc7bb392847c08dcd00fe9be2", decimals: 18 },
-  { symbol: "sMON", address: "0xE1d2439b75fb9746e7bc6cb777ae10aa7f7ef9c5", decimals: 18 },
-  { symbol: "shMON", address: "0x3a98250f98dd388c211206983453837c8365bdc1", decimals: 18 },
-  { symbol: "stMON", address: "0x199c0da6f291a897302300aaae4f20d139162916", decimals: 18 },
+  { symbol: "NOM", address: "0x43E52CBC0073CAA7C0CF6E64B576CE2D6FB14EB8", decimals: 18 },
+  { symbol: "NSTR", address: "0xC85548E0191CD34BE8092B0D42EB4E45EBA0D581", decimals: 18 },
+  { symbol: "P1", address: "0x44369AAFDD04CD9609A57EC0237884F45DD80818", decimals: 18 },
+  { symbol: "RBSD", address: "0x8A86D48C867B76FF74A36D3AF4D2F1E707B143ED", decimals: 18 },
+  { symbol: "RED", address: "0x92EAC40C98B383EA0F0EFDA747BDAC7AC891D300", decimals: 18 },
+  { symbol: "TFAT", address: "0x24D2FD6C5B29EEBD5169CC7D6E8014CD65DECD73", decimals: 18 },
+  { symbol: "USDX", address: "0xD875BA8E2CAD3C0F7E2973277C360C8D2F92B510", decimals: 6 },
+  { symbol: "USDm", address: "0xBDD352F339E27E07089039BA80029F9135F6146F", decimals: 6 },
+  { symbol: "WBTC", address: "0xCF5A6076CFA32686C0DF13ABADA2B40DEC133F1D", decimals: 8 },
+  { symbol: "WETH", address: "0xB5A30B0FDC5EA94A52FDC42E3E9760CB8449FB37", decimals: 18 },
+  { symbol: "WMON", address: "0x760AFE86E5DE5FA0EE542FC7B7B713E1C5425701", decimals: 18 },
+  { symbol: "WSOL", address: "0x5387C85A4965769F6B0DF430638A1388493486F1", decimals: 9 },
+  { symbol: "YAKI", address: "0xFE140E1DCE99BE9F4F15D657CD9B7BF622270C50", decimals: 18 },
+  { symbol: "aprMON", address: "0xB2F82D0F38DC453D596AD40A37799446CC89274A", decimals: 18 },
+  { symbol: "gMON", address: "0xAEEF2F6B429CB59C9B2D7BB2141ADA993E8571C3", decimals: 18 },
+  { symbol: "iceMON", address: "0xCEB564775415B524640D9F688278490A7F3EF9CD", decimals: 18 },
+  { symbol: "mamaBTC", address: "0x3B428DF09C3508D884C30266AC1577F099313CF6", decimals: 8 },
+  { symbol: "muBOND", address: "0x0EFED4D9FB7863CCC7BB392847C08DCD00FE9BE2", decimals: 18 },
+  { symbol: "sMON", address: "0xE1D2439B75FB9746E7BC6CB777AE10AA7F7EF9C5", decimals: 18 },
+  { symbol: "shMON", address: "0x3A98250F98DD388C211206983453837C8365BDC1", decimals: 18 },
+  { symbol: "stMON", address: "0x199C0DA6F291A897302300AAAE4F20D139162916", decimals: 18 },
 ];
 
 const TOKENS = RAW_TOKENS.map(t =>
@@ -75,6 +79,29 @@ function formatBalance(val: string | number | undefined, decimals = 4) {
   return Number(val).toFixed(decimals);
 }
 
+// Add TipTransaction type
+interface TipTransaction {
+  id: number;
+  tx_hash: string;
+  tx_status: string;
+  timestamp: string;
+  tipper_fid: number;
+  tipper_username: string;
+  tipper_wallet: string;
+  recipient_fid: number;
+  recipient_username: string;
+  recipient_wallet: string;
+  token_symbol: string;
+  token_address: string;
+  amount: string;
+  amount_wei: string;
+  cast_hash: string;
+  parent_cast_hash: string;
+  block_number: number;
+  gas_used: string;
+  failure_reason: string;
+}
+
 export default function Home() {
   const { context, isEthProviderAvailable } = useMiniAppContext();
   const [copied, setCopied] = useState(false);
@@ -84,11 +111,16 @@ export default function Home() {
   const [balances, setBalances] = useState<Record<string, string>>({});
   const [polling, setPolling] = useState(false);
   const [creationError, setCreationError] = useState<string | null>(null);
-  const [activeMainTab, setActiveMainTab] = useState<'wallet' | 'settings'>('wallet');
-  const [activeSettingsTab, setActiveSettingsTab] = useState<'deposit' | 'withdraw'>('deposit');
+  const [activeTab, setActiveTab] = useState<'assets' | 'deposit' | 'withdraw'>('assets');
+  const [showDeposit, setShowDeposit] = useState(false);
+  const [showWithdraw, setShowWithdraw] = useState(false);
+  const [showMontipWallet, setShowMontipWallet] = useState(false);
+  const [activePage, setActivePage] = useState<'home' | 'profile'>('home');
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const fid = context?.user?.fid;
   const username = context?.user?.username || "-";
+  const pfpurl = context?.user?.pfpUrl || " ";
+
 
   // Wallet hooks
   const { isConnected, address, chainId } = useAccount();
@@ -118,6 +150,31 @@ export default function Home() {
   // New state for login wallet balances
   const [montipBalances, setMontipBalances] = useState<Record<string, string>>({});
   const [loginWalletBalances, setLoginWalletBalances] = useState<Record<string, string>>({});
+
+  // Tip history state
+  const [historyMode, setHistoryMode] = useState<'tipper' | 'earner'>('tipper');
+  const [tipHistory, setTipHistory] = useState<TipTransaction[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+
+  // Add state for total tipped/earned
+  const [totalTipped, setTotalTipped] = useState(0);
+  const [totalEarned, setTotalEarned] = useState(0);
+
+  // Add state for per-token totals
+  const [tippedTokens, setTippedTokens] = useState<{ [symbol: string]: number }>({});
+  const [earnedTokens, setEarnedTokens] = useState<{ [symbol: string]: number }>({});
+
+  // Separate state for tipper and earner histories and totals
+  const [tipperHistory, setTipperHistory] = useState<TipTransaction[]>([]);
+  const [earnerHistory, setEarnerHistory] = useState<TipTransaction[]>([]);
+  const [tipperTotal, setTipperTotal] = useState(0);
+  const [earnerTotal, setEarnerTotal] = useState(0);
+  const [tipperTokens, setTipperTokens] = useState<{ [symbol: string]: number }>({});
+  const [earnerTokens, setEarnerTokens] = useState<{ [symbol: string]: number }>({});
+
+  const { actions } = useFrame();
+  const { shareStats } = useShareStats();
 
   // Auto-hide messages
   useEffect(() => {
@@ -149,80 +206,69 @@ export default function Home() {
 
   const MONAD_TESTNET_ID = 10143;
 
-  // Helper to fetch balances from the route API
+  // Helper to fetch balances for both wallets using Alchemy batch endpoint
   const fetchAllBalances = async (montipAddress: string, loginAddress?: string) => {
-    // Helper to fetch balances from the route API
-    async function fetchBalances(address: string) {
-      const response = await fetch("/api/get-balances", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address }),
-      });
-      return response.json();
-    }
-
-    // Fetch Montip wallet balances
-    const montipData = await fetchBalances(montipAddress);
-    // Fetch login wallet balances if provided
-    let loginData = null;
+    const addresses = [
+      { address: montipAddress, networks: ["monad-testnet"] },
+    ];
     if (loginAddress) {
-      loginData = await fetchBalances(loginAddress);
+      addresses.push({ address: loginAddress, networks: ["monad-testnet"] });
     }
-
-    // Parse balances for both wallets
+    const response = await fetch("https://api.g.alchemy.com/data/v1/ClXqqWvrb6dzy32jRH4jzOfqEReo3T7h/assets/tokens/balances/by-address", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ addresses, includeNativeTokens: true }),
+    });
+    const body = await response.json();
+    const tokensArr = body?.data?.tokens || [];
     const montip: Record<string, string> = {};
     const login: Record<string, string> = {};
-
-    // Helper to parse token balances
-    function parseTokenBalances(tokensArr: any[], target: Record<string, string>) {
       for (const tokenObj of tokensArr) {
-        let symbol = "MON";
-        let decimals = 18;
-        if (tokenObj.tokenAddress) {
+      const isMontip = tokenObj.address.toLowerCase() === montipAddress.toLowerCase();
+      const isLogin = loginAddress && tokenObj.address.toLowerCase() === loginAddress.toLowerCase();
+      // Find token meta
+      let symbol = "MON";
+      let decimals = 18;
+      if (tokenObj.tokenAddress) {
           const token = TOKENS.find(
-            (t) => t.address && t.address.toLowerCase() === tokenObj.tokenAddress.toLowerCase()
+          (t) => t.address && t.address.toLowerCase() === tokenObj.tokenAddress.toLowerCase()
           );
           if (token) {
-            symbol = token.symbol;
-            decimals = token.decimals;
-          } else {
-            continue; // skip unknown tokens
-          }
+          symbol = token.symbol;
+          decimals = token.decimals;
+        } else {
+          continue; // skip unknown tokens
         }
-        const value = (parseInt(tokenObj.tokenBalance, 16) / 10 ** decimals).toFixed(4);
-        target[symbol] = value;
       }
+      const value = (parseInt(tokenObj.tokenBalance, 16) / 10 ** decimals).toFixed(4);
+      if (isMontip) montip[symbol] = value;
+      if (isLogin) login[symbol] = value;
     }
-
-    if (montipData?.data?.tokens) {
-      parseTokenBalances(montipData.data.tokens, montip);
-    }
-    if (loginData?.data?.tokens) {
-      parseTokenBalances(loginData.data.tokens, login);
-    }
-
     setMontipBalances(montip);
     setLoginWalletBalances(login);
   };
 
-  // After wallet connect, fetch both
+  // Effect to fetch balances when home page is active
   useEffect(() => {
-    if (!walletAddress) return;
-    if (!isConnected || !address) return;
-    // Only trigger for manual wallet connect
-    fetchAllBalances(walletAddress, address);
-  }, [isConnected, address]); // Only depend on connection changes
-
-  // On Wallet tab, always fetch both if connected
-  useEffect(() => {
-    if (activeMainTab === 'wallet' && walletAddress) {
+    if (activePage === 'home' && walletAddress) {
       if (isConnected && address) {
         fetchAllBalances(walletAddress, address);
       } else {
         fetchAllBalances(walletAddress);
       }
     }
-  }, [activeMainTab, walletAddress, isConnected, address]);
+  }, [activePage, walletAddress, isConnected, address]);
+
+  // On Assets tab, always fetch both if connected
+  useEffect(() => {
+    if (activeTab === 'assets' && walletAddress) {
+      if (isConnected && address) {
+        fetchAllBalances(walletAddress, address);
+      } else {
+        fetchAllBalances(walletAddress);
+      }
+    }
+  }, [activeTab, walletAddress, isConnected, address]);
 
   // After deposit/withdraw, re-fetch both
   const refreshBalances = () => {
@@ -270,11 +316,7 @@ export default function Home() {
     if (!walletAddress) return;
     setPolling(true);
     console.log("[MiniApp] Manual balance update triggered");
-    if (isConnected && address) {
-      fetchAllBalances(walletAddress, address).finally(() => setPolling(false));
-    } else {
-      fetchAllBalances(walletAddress).finally(() => setPolling(false));
-    }
+    fetchAllBalances(walletAddress).finally(() => setPolling(false));
   };
 
   // Replace handleCreate with API call
@@ -306,7 +348,9 @@ export default function Home() {
           args: [BigInt(fid)],
         });
         setWalletAddress(address as string);
-        // Wallet tab effect will handle the balance fetch
+        if (address && address !== '0x0000000000000000000000000000000000000000') {
+          await fetchAllBalances(address as string);
+        }
       }, 2000);
     } catch (e: any) {
       console.error("[MiniApp] Error creating wallet:", e);
@@ -356,8 +400,6 @@ export default function Home() {
   }, [depositToken]);
 
   const handleDeposit = async () => {
-    console.log("[DEBUG] Deposit token object:", depositToken);
-    console.log("[DEBUG] Deposit amount:", depositAmount);
     setIsDepositing(true);
     setDepositError(null);
     setDepositSuccess(null);
@@ -386,14 +428,15 @@ export default function Home() {
       }
       if (depositToken.symbol === "MON") {
         try {
-          console.log("[DEBUG] Sending native MON deposit", { to: walletAddress, value: depositAmount });
           sendTransaction({
             to: walletAddress as `0x${string}`,
             value: parseEther(depositAmount),
             gas: BigInt(25000),
           });
+          // Success message will be handled in the txHash effect
+          // No need to wait for receipt or check tx.hash here
+          // No inline note about MON fee
         } catch (err: any) {
-          console.error("[DEBUG] MON deposit error:", err);
           if (err?.message?.toLowerCase().includes("user rejected")) {
             setDepositError("You rejected the transaction.");
           } else if (err?.message?.toLowerCase().includes("insufficient funds")) {
@@ -421,23 +464,19 @@ export default function Home() {
               setIsDepositing(false);
               return;
             }
-            console.log("[DEBUG] ERC20 deposit contract address:", checksummedAddress);
-            const amountWei = parseUnits(depositAmount, depositToken.decimals);
-            console.log("[DEBUG] ERC20 deposit amount (wei):", amountWei.toString());
             const tx = await writeContractAsync({
               address: checksummedAddress,
               abi: erc20Abi,
               functionName: "transfer",
-              args: [walletAddress as `0x${string}`, amountWei]
+              args: [walletAddress as `0x${string}`, BigInt(String(Math.floor(Number(depositAmount) * 10 ** depositToken.decimals)))]
             });
-            console.log("[DEBUG] ERC20 deposit tx hash:", tx);
             if (tx) {
+              // Wait for confirmation
               await publicClient.waitForTransactionReceipt({ hash: tx });
               setDepositSuccess("Deposit successful!");
               refreshBalances();
             }
           } catch (err: any) {
-            console.error("[DEBUG] ERC20 deposit error:", err);
             if (err?.message?.toLowerCase().includes("user rejected")) {
               setDepositError("You rejected the transaction.");
             } else if (err?.message?.toLowerCase().includes("insufficient funds")) {
@@ -451,7 +490,6 @@ export default function Home() {
         }
       }
     } catch (err: any) {
-      console.error("[DEBUG] Deposit outer error:", err);
       setDepositError("Deposit failed: Please try again");
     }
     setIsDepositing(false);
@@ -465,8 +503,6 @@ export default function Home() {
 
   // Withdraw handler
   const handleWithdraw = async () => {
-    console.log("[DEBUG] Withdraw token object:", withdrawToken);
-    console.log("[DEBUG] Withdraw amount:", withdrawAmount);
     setIsWithdrawing(true);
     setWithdrawError(null);
     setWithdrawSuccess(null);
@@ -477,7 +513,6 @@ export default function Home() {
         return;
       }
       const toAddr = withdrawToOther ? withdrawOtherAddress : address;
-      console.log("[DEBUG] Withdraw recipient address:", toAddr);
       if (!toAddr) {
         setWithdrawError("No recipient address");
         setIsWithdrawing(false);
@@ -505,7 +540,6 @@ export default function Home() {
         }),
       });
       const data = await res.json();
-      console.log("[DEBUG] Withdraw backend response:", data);
       if (!res.ok) {
         if (data.error?.toLowerCase().includes("insufficient funds")) {
           setWithdrawError("Insufficient funds: Not enough balance");
@@ -517,16 +551,9 @@ export default function Home() {
       } else {
         setWithdrawSuccess("Withdraw successful!");
         setWithdrawAmount("");
-        // Wait for transaction confirmation before refreshing balances
-        try {
-          await publicClient.waitForTransactionReceipt({ hash: data.txHash });
-          refreshBalances();
-        } catch (e) {
-          // Optionally handle error
-        }
+        refreshBalances();
       }
     } catch (err: any) {
-      console.error("[DEBUG] Withdraw error:", err);
       setWithdrawError("Withdraw failed: Please try again");
     }
     setIsWithdrawing(false);
@@ -539,378 +566,620 @@ export default function Home() {
     }
   }, [isConnected, chainId, switchChain]);
 
+  // Fetch both histories and totals when profile tab becomes active
+  useEffect(() => {
+    if (activePage !== 'profile') return;
+    setHistoryLoading(true);
+    setHistoryError(null);
+    // Fetch tipper
+    fetch(`/api/history?fid=${fid}&mode=tipper`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setTipperHistory(data);
+          let sum = 0;
+          const tokenMap: { [symbol: string]: number } = {};
+          data.forEach(tx => {
+            const amt = parseFloat(tx.amount || 0);
+            sum += amt;
+            if (tx.token_symbol) {
+              tokenMap[tx.token_symbol] = (tokenMap[tx.token_symbol] || 0) + amt;
+            }
+          });
+          setTipperTotal(sum);
+          setTipperTokens(tokenMap);
+        } else {
+          setTipperHistory([]);
+          setTipperTotal(0);
+          setTipperTokens({});
+        }
+      })
+      .catch(() => {
+        setTipperHistory([]);
+        setTipperTotal(0);
+        setTipperTokens({});
+      });
+    // Fetch earner
+    fetch(`/api/history?fid=${fid}&mode=earner`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setEarnerHistory(data);
+          let sum = 0;
+          const tokenMap: { [symbol: string]: number } = {};
+          data.forEach(tx => {
+            const amt = parseFloat(tx.amount || 0);
+            sum += amt;
+            if (tx.token_symbol) {
+              tokenMap[tx.token_symbol] = (tokenMap[tx.token_symbol] || 0) + amt;
+            }
+          });
+          setEarnerTotal(sum);
+          setEarnerTokens(tokenMap);
+        } else {
+          setEarnerHistory([]);
+          setEarnerTotal(0);
+          setEarnerTokens({});
+        }
+      })
+      .catch(() => {
+        setEarnerHistory([]);
+        setEarnerTotal(0);
+        setEarnerTokens({});
+      })
+      .finally(() => setHistoryLoading(false));
+    // Default to tipper mode
+    setHistoryMode('tipper');
+  }, [activePage, fid]);
+
+  // On history tab switch, always re-fetch and update relevant history and totals
+  useEffect(() => {
+    if (activePage !== 'profile') return;
+    setHistoryLoading(true);
+    setHistoryError(null);
+    fetch(`/api/history?fid=${fid}&mode=${historyMode}`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          if (historyMode === 'tipper') {
+            setTipperHistory(data);
+            let sum = 0;
+            const tokenMap: { [symbol: string]: number } = {};
+            data.forEach(tx => {
+              const amt = parseFloat(tx.amount || 0);
+              sum += amt;
+              if (tx.token_symbol) {
+                tokenMap[tx.token_symbol] = (tokenMap[tx.token_symbol] || 0) + amt;
+              }
+            });
+            setTipperTotal(sum);
+            setTipperTokens(tokenMap);
+          } else {
+            setEarnerHistory(data);
+            let sum = 0;
+            const tokenMap: { [symbol: string]: number } = {};
+            data.forEach(tx => {
+              const amt = parseFloat(tx.amount || 0);
+              sum += amt;
+              if (tx.token_symbol) {
+                tokenMap[tx.token_symbol] = (tokenMap[tx.token_symbol] || 0) + amt;
+              }
+            });
+            setEarnerTotal(sum);
+            setEarnerTokens(tokenMap);
+          }
+        } else {
+          if (historyMode === 'tipper') {
+            setTipperHistory([]);
+            setTipperTotal(0);
+            setTipperTokens({});
+          } else {
+            setEarnerHistory([]);
+            setEarnerTotal(0);
+            setEarnerTokens({});
+          }
+        }
+      })
+      .catch(() => {
+        if (historyMode === 'tipper') {
+          setTipperHistory([]);
+          setTipperTotal(0);
+          setTipperTokens({});
+        } else {
+          setEarnerHistory([]);
+          setEarnerTotal(0);
+          setEarnerTokens({});
+        }
+      })
+      .finally(() => setHistoryLoading(false));
+  }, [historyMode, activePage, fid]);
+
+  // For rendering, always show both tipper and earner totals/tokens, but only one history
+  // (currentHistory, currentTotal, currentTokens are still used for the history list)
+  const currentHistory = historyMode === 'tipper' ? tipperHistory : earnerHistory;
+  const currentTotal = historyMode === 'tipper' ? tipperTotal : earnerTotal;
+  const currentTokens = historyMode === 'tipper' ? tipperTokens : earnerTokens;
+
+  // Share functionality is now handled by useShareStats hook
+
   // No custom splash logic; rely on Warpcast SDK splash
   if (loading) return null;
 
   return (
-    <div className="min-h-screen h-full w-full flex flex-col items-center justify-start" style={{
-      background: "linear-gradient(135deg, #5b4dcf 0%, #a280ff 100%)",
-      minHeight: "100vh"
-    }}>
+    <div className="w-full min-h-screen bg-gradient-to-br from-[#5b4dcf] to-[#a280ff] flex flex-col items-center pb-24">
       <SplashScreen />
-
-      {/* Top bar: product name, username, fid left; wallet right in Settings tab */}
+      
+      {/* Top bar: conditional rendering for Home and Profile */}
       <div className="w-full flex flex-row items-center justify-between pt-6 pb-2 px-4">
-        <div className="flex flex-col items-start">
-          <span className="text-white font-extrabold text-xl tracking-widest uppercase mb-1">MONTIP</span>
-          {/* Show smaller username and FID in top-right corner of Wallet tab */}
-          {activeMainTab === 'wallet' && (
-            <div className="absolute top-4 right-4 flex flex-col items-end">
-              <div className="text-base text-white font-semibold tracking-wide font-sans">@{username}</div>
-              <div className="text-xs text-indigo-100 font-medium">FID: {fid ?? "-"}</div>
+        {activePage === 'home' ? (
+          <>
+            <span className="text-white font-extrabold text-xl tracking-widest uppercase mb-1">MONTIP</span>
+            <div className="flex flex-col items-end">
+              {isConnected ? (
+                <div className="flex flex-row items-center space-x-2">
+                  <div className="flex flex-col items-start">
+                    <span className="text-white text-sm">{shortenAddress(address || '')}</span>
+                    <span className="text-xs text-white/80">{formatBalance(loginWalletBalances["MON"])} MON</span>
+                  </div>
+                  <button
+                    onClick={() => disconnect()}
+                    className="bg-white/20 text-white px-2 py-1 rounded text-sm hover:bg-white/30 ml-2"
+                  >
+                    Disconnect
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => connect({ connector: farcasterFrame() })}
+                  className="bg-white text-black px-4 py-1 rounded text-sm hover:bg-white/90"
+                >
+                  Connect Wallet
+                </button>
+              )}
             </div>
-          )}
-        </div>
-        {/* Show Connect Wallet or address/disconnect in Settings tab top right */}
-        {activeMainTab === 'settings' && (
-          !isConnected ? (
-            <button
-              onClick={() => connect({ connector: farcasterFrame() })}
-              className="bg-white text-black px-4 py-1 rounded text-sm hover:bg-white/90"
-            >
-              Connect Wallet
-            </button>
-          ) : (
-            <div className="flex flex-row items-center space-x-2">
-              <div className="flex flex-col items-start">
-                <span className="text-white text-sm">{shortenAddress(address || '')}</span>
-                <span className="text-xs text-white/80">{formatBalance(loginWalletBalances["MON"])} MON</span>
+          </>
+        ) : activePage === 'profile' ? (
+          <>
+            <div className="flex flex-row items-center space-x-3">
+              {pfpurl && (
+                <img src={pfpurl} alt="Profile" className="w-10 h-10 rounded-full object-cover border-2 border-white" />
+              )}
+              <div className="flex flex-col">
+                <span className="text-lg text-white font-bold tracking-wide font-sans">@{username}</span>
+                <span className="text-sm text-indigo-100 font-medium">FID: {fid ?? "-"}</span>
               </div>
-              <button
-                onClick={() => disconnect()}
-                className="bg-white/20 text-white px-2 py-1 rounded text-sm hover:bg-white/30 ml-2"
-              >
-                Disconnect
-              </button>
             </div>
-          )
-        )}
+          </>
+        ) : null}
       </div>
 
-      {/* Info message for wallet tab: what Montip does and how to use it */}
-      {activeMainTab === 'wallet' && (
-        <div className="w-full flex flex-col items-center mt-2 mb-4 px-6">
-          <div className="bg-white/10 text-white text-center text-base rounded-xl px-4 py-3 max-w-xl shadow-sm">
-            To tip, reply to any cast with <span className="font-mono bg-white/20 px-1 rounded">!montip tip 1 mon</span> to instantly send MON to that user. For more details, tap on
-            <span className="inline-block align-middle ml-1">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline w-5 h-5 text-white/80">
-                <circle cx="12" cy="12" r="10" />
-                <text x="12" y="16" textAnchor="middle" fontSize="12" fill="currentColor" fontFamily="monospace" fontWeight="bold">?</text>
-              </svg>
-            </span>
-            .
-          </div>
-        </div>
-      )}
-
       {/* Main Content Area */}
-      <div className="w-full max-w-lg px-4 flex-1 flex flex-col justify-center items-center pb-20">
-        {activeMainTab === 'wallet' && (
+      <div className="w-full max-w-lg px-4 flex-1 flex flex-col justify-start items-center space-y-4 py-4">
+        {activePage === 'home' && (
           <>
-            {/* Tokens List Block - restore vertical scroll */}
-            <div className="flex flex-col flex-1 w-full max-w-lg">
-              {walletAddress && (
-                <div className="bg-white border border-gray-200 rounded-2xl px-6 py-4 w-full flex-1 flex flex-col mt-08">
-                  {/* Improved Montip Wallet address and copy button as header */}
-                  <div className="flex items-center justify-between mb-4 bg-indigo-50 rounded-xl px-3 py-2" style={{ boxShadow: '0 1px 4px 0 rgba(80,80,180,0.06)' }}>
-                    <span className="font-bold text-indigo-700 mr-2">Montip Wallet</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-indigo-700">{shortenAddress(walletAddress)}</span>
+            {/* About Montip Section */}
+            {walletAddress && (
+              <div className="w-full mb-4 bg-gradient-to-r from-white/15 to-white/10 border border-white/25 rounded-2xl p-4">
+                <div className="flex items-center mb-3">
+                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-white text-lg">💡</span>
+                  </div>
+                  <h3 className="text-white font-bold text-lg">About Montip</h3>
+                </div>
+                <p className="text-white/90 text-sm leading-relaxed mb-3">
+                  Montip lets you tip your favorite Farcaster users with any Monad token! Your tips are stored on-chain
+                </p>
+                <div className="bg-white/10 rounded-xl p-3 mb-3">
+                  <h4 className="text-white font-semibold text-sm mb-2">🚀 How to get started:</h4>
+                  <ul className="text-white/80 text-xs space-y-1">
+                    <li>• Deposit tokens to your Montip wallet</li>
+                    <li>• Reply to any cast with "!montip tip amount token"</li>
+                    <li>• Check your profile to see tip stats and history</li>
+                    <li>• For more details, click help button</li>
+
+                  </ul>
+                </div>
+                <div className="text-center">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full bg-yellow-400/20 text-yellow-200 text-xs font-medium">
+                    <span className="mr-1">⚡</span>
+                    Onchain tips, onchain flex
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Montip Wallet Section - Collapsible */}
+            {walletAddress && (
+              <div className="w-full">
+                <button
+                  onClick={() => {
+                    setShowMontipWallet(!showMontipWallet);
+                    if (!showMontipWallet) {
+                      if (isConnected && address) {
+                        fetchAllBalances(walletAddress, address);
+                      } else {
+                        fetchAllBalances(walletAddress);
+                      }
+                    }
+                  }}
+                  className="w-full bg-white/20 hover:bg-white/30 text-white font-bold py-3 px-4 rounded-lg flex justify-between items-center"
+                >
+                  <span>Montip Wallet</span>
+                  <svg
+                    className={`w-5 h-5 transform transition-transform ${showMontipWallet ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {showMontipWallet && (
+                  <div className="mt-2 bg-white/20 border border-white/30 rounded-2xl p-4">
+                    <div className="flex items-center justify-between bg-white/20 rounded-xl px-4 py-2 mb-4">
+                      <span className="font-bold text-white mr-2">Wallet Address</span>
+                      <span className="font-mono text-xs text-white mr-2">{shortenAddress(walletAddress)}</span>
                       <button
                         onClick={handleCopy}
-                        className="text-indigo-700 bg-indigo-100 hover:bg-indigo-200 rounded p-1 border border-indigo-200"
+                        className="text-white bg-indigo-500 hover:bg-indigo-600 rounded p-1"
                         title={copied ? "Copied!" : "Copy address"}
-                        style={{ transition: 'background 0.2s' }}
                       >
                         {copied ? (
                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                           </svg>
                         ) : (
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h5M20 20v-5h-5M5.07 19A9 9 0 1 1 21 12.93" />
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m2.25-2.25V6.75A2.25 2.25 0 0015.75 4.5h-7.5A2.25 2.25 0 006 6.75v10.5A2.25 2.25 0 008.25 19.5h6.5A2.25 2.25 0 0017 17.25v-2.25" />
                           </svg>
                         )}
                       </button>
                     </div>
-                  </div>
-                  <div className="flex-1 min-h-0 overflow-y-auto flex flex-col" style={{ maxHeight: '260px', overflowY: 'auto' }}>
-                    {Object.entries(montipBalances).map(([symbol, balance], idx, arr) => (
-                      <div
-                        key={symbol}
-                        className={`flex flex-row items-center justify-between px-2 py-3 ${idx < arr.length - 1 ? 'border-b border-gray-200' : ''
-                          }`}
-                      >
-                        <span className="font-mono text-base text-gray-900 font-bold">{symbol}</span>
-                        <span className="font-mono text-lg font-bold text-gray-900">{balance}</span>
+                    <div className="bg-white border border-gray-200 rounded-2xl px-6 py-4">
+                      <div className="text-lg font-bold text-gray-700 mb-2 text-center">Tokens</div>
+                      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                        {Object.entries(montipBalances).map(([symbol, balance], idx, arr) => (
+                          <div
+                            key={symbol}
+                            className={`flex flex-row items-center justify-between px-2 py-3 ${
+                              idx < arr.length - 1 ? 'border-b border-gray-200' : ''
+                            }`}
+                          >
+                            <span className="font-mono text-base text-gray-900 font-bold">{symbol}</span>
+                            <span className="font-mono text-lg font-bold text-gray-900">{balance}</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    </div>
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* Deposit Section */}
+            <div className="w-full">
+              <button
+                onClick={() => setShowDeposit(!showDeposit)}
+                className="w-full bg-white/20 hover:bg-white/30 text-white font-bold py-3 px-4 rounded-lg flex justify-between items-center"
+              >
+                <span>Deposit</span>
+                <svg
+                  className={`w-5 h-5 transform transition-transform ${showDeposit ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {showDeposit && (
+                <div className="mt-2 bg-white/20 border border-white/30 shadow-xl rounded-2xl p-4">
+                  {!isConnected ? (
+                    <div className="flex flex-col items-center justify-center w-full py-8">
+                      <button
+                        onClick={() => connect({ connector: farcasterFrame() })}
+                        className="bg-white text-black px-6 py-2 rounded text-lg font-bold hover:bg-white/90 mb-3"
+                      >
+                        Connect Wallet
+                      </button>
+                      <div className="text-white text-center text-sm">Connect your login wallet to deposit tokens.</div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* From/To Wallets at the top */}
+                      <div className="w-full mb-4">
+                        <div className="text-xs text-white/80 mb-1">From connected wallet:</div>
+                        <span className="block font-mono text-xs text-white bg-black/20 rounded px-2 py-1 mb-2 break-all">
+                          {address}
+                        </span>
+                        <div className="text-xs text-white/80 mb-1">To your Montip wallet:</div>
+                        <span className="block font-mono text-xs text-white bg-black/20 rounded px-2 py-1 break-all">
+                          {walletAddress}
+                        </span>
+                      </div>
+                      <div className="w-full mb-4">
+                        <select
+                          value={depositToken.symbol}
+                          onChange={e => setDepositToken(TOKENS.find(t => t.symbol === e.target.value) || TOKENS[0])}
+                          className="w-full p-3 rounded-lg border border-gray-300 text-lg font-semibold text-gray-800 focus:outline-none"
+                        >
+                          {TOKENS.map(token => (
+                            <option key={token.symbol} value={token.symbol}>
+                              {token.symbol}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="w-full mb-2 text-right text-xs text-white/80">
+                        Balance: {loginWalletBalances[depositToken.symbol] ? Number(loginWalletBalances[depositToken.symbol]).toFixed(4) : '0.0000'} {depositToken.symbol}
+                      </div>
+                      <div className="w-full mb-4 relative">
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={depositAmount}
+                          onChange={e => setDepositAmount(e.target.value)}
+                          placeholder="Amount"
+                          className="w-full p-3 rounded-lg border border-gray-300 text-lg font-mono focus:outline-none pr-16"
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 text-black text-xs font-bold px-3 py-1 rounded shadow hover:bg-white"
+                          style={{ zIndex: 2 }}
+                          onClick={() => setDepositAmount(loginWalletBalances[depositToken.symbol] || "")}
+                        >
+                          Max
+                        </button>
+                      </div>
+                      <button
+                        className="w-full bg-green-500 hover:bg-green-600 text-white text-lg font-bold py-3 rounded-lg transition-all duration-150 shadow mb-4"
+                        onClick={handleDeposit}
+                        disabled={isDepositing || !depositAmount || !walletAddress || !address}
+                      >
+                        {isDepositing ? "Depositing..." : `Deposit ${depositToken.symbol}`}
+                      </button>
+                      {depositSuccess && <div className="mt-2 text-green-300 text-center font-semibold">{depositSuccess}</div>}
+                      {depositError && (
+                        <div className="mt-2 text-red-300 text-center font-semibold">
+                          {depositError}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Withdraw Section */}
+            <div className="w-full">
+              <button
+                onClick={() => setShowWithdraw(!showWithdraw)}
+                className="w-full bg-white/20 hover:bg-white/30 text-white font-bold py-3 px-4 rounded-lg flex justify-between items-center"
+              >
+                <span>Withdraw</span>
+                <svg
+                  className={`w-5 h-5 transform transition-transform ${showWithdraw ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {showWithdraw && (
+                <div className="mt-2 bg-white/20 border border-white/30 shadow-xl rounded-2xl p-4">
+                  {!isConnected ? (
+                    <div className="flex flex-col items-center justify-center w-full py-8">
+                      <button
+                        onClick={() => connect({ connector: farcasterFrame() })}
+                        className="bg-white text-black px-6 py-2 rounded text-lg font-bold hover:bg-white/90 mb-3"
+                      >
+                        Connect Wallet
+                      </button>
+                      <div className="text-white text-center text-sm">Connect your login wallet to withdraw tokens.</div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* From Montip wallet */}
+                      <div className="w-full mb-4">
+                        <div className="text-xs text-white/80 mb-1">From your Montip wallet:</div>
+                        <span className="block font-mono text-xs text-white bg-black/20 rounded px-2 py-1 break-all w-full">{walletAddress}</span>
+                      </div>
+                      {/* To login wallet (default) */}
+                      <div className="w-full mb-4">
+                        <div className="text-xs text-white/80 mb-1">Send to login wallet:</div>
+                        <span className="block font-mono text-xs text-white bg-black/20 rounded px-2 py-1 break-all">
+                          {address || "-"}
+                        </span>
+                      </div>
+                      {/* Withdraw to different wallet */}
+                      <div className="w-full mb-4 flex items-center">
+                        <input
+                          id="withdraw-different-wallet"
+                          type="checkbox"
+                          className="mr-2"
+                          checked={withdrawToOther}
+                          onChange={e => setWithdrawToOther(e.target.checked)}
+                        />
+                        <label htmlFor="withdraw-different-wallet" className="text-xs text-white/80">Withdraw to a different wallet</label>
+                      </div>
+                      {withdrawToOther && (
+                        <div className="w-full mb-4">
+                          <input
+                            type="text"
+                            value={withdrawOtherAddress}
+                            onChange={e => setWithdrawOtherAddress(e.target.value)}
+                            placeholder="Recipient address"
+                            className="w-full p-3 rounded-lg border border-gray-300 text-lg font-mono focus:outline-none"
+                          />
+                        </div>
+                      )}
+                      {/* Token select and amount */}
+                      <div className="w-full mb-4">
+                        <select
+                          value={withdrawToken.symbol}
+                          onChange={e => setWithdrawToken(TOKENS.find(t => t.symbol === e.target.value) || TOKENS[0])}
+                          className="w-full p-3 rounded-lg border border-gray-300 text-lg font-semibold text-gray-800 focus:outline-none"
+                        >
+                          {TOKENS.map(token => (
+                            <option key={token.symbol} value={token.symbol}>
+                              {token.symbol}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="w-full mb-2 text-right text-xs text-white/80">
+                        Balance: {montipBalances[withdrawToken.symbol] ? Number(montipBalances[withdrawToken.symbol]).toFixed(4) : '0.0000'} {withdrawToken.symbol}
+                      </div>
+                      <div className="w-full mb-4 relative">
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={withdrawAmount}
+                          onChange={e => setWithdrawAmount(e.target.value)}
+                          placeholder="Amount"
+                          className="w-full p-3 rounded-lg border border-gray-300 text-lg font-mono focus:outline-none pr-16"
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 text-black text-xs font-bold px-3 py-1 rounded shadow hover:bg-white"
+                          style={{ zIndex: 2 }}
+                          onClick={() => {
+                            const bal = montipBalances[withdrawToken.symbol] ? Number(montipBalances[withdrawToken.symbol]) : 0;
+                            if (withdrawToken.symbol === "MON") {
+                              setWithdrawAmount(bal > 0.008 ? (bal - 0.008).toFixed(4) : "0");
+                            } else {
+                              setWithdrawAmount(bal.toFixed(4));
+                            }
+                          }}
+                        >
+                          Max
+                        </button>
+                      </div>
+                      <button
+                        className="w-full bg-green-500 hover:bg-green-600 text-white text-lg font-bold py-3 rounded-lg transition-all duration-150 shadow mb-4"
+                        onClick={handleWithdraw}
+                        disabled={isWithdrawing || !withdrawAmount || !walletAddress || (!address && !withdrawToOther) || Number(withdrawAmount) <= 0}
+                      >
+                        {isWithdrawing ? `Withdrawing...` : `Withdraw ${withdrawToken.symbol}`}
+                      </button>
+                      {withdrawSuccess && <div className="mt-2 text-green-300 text-center font-semibold">Withdraw successful! Your funds are on the way.</div>}
+                      {withdrawError && (
+                        <div className="mt-2 text-red-300 text-center font-semibold">
+                          {withdrawError}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
             </div>
           </>
         )}
 
-        {activeMainTab === 'settings' && (
-          <div className="w-full flex flex-col items-center">
-            {/* Settings Tab Navigation - always at the very top, separated from the card */}
-            <div className="flex space-x-2 bg-white/10 rounded-lg p-1 mb-4 w-full max-w-[370px]">
-              {(['deposit', 'withdraw'] as const).map((tab) => (
+        {activePage === 'profile' && (
+          <div className="w-full h-full flex flex-col items-center justify-center">
+            {/* Totals section header */}
+            <div className="w-full max-w-lg mx-auto mt-4 mb-1 flex items-center justify-between">
+              <span className="block text-lg font-bold text-white/80 pl-2">Total</span>
+              {/* Share/Cast Icon */}
+              {actions && (
                 <button
-                  key={tab}
-                  onClick={() => setActiveSettingsTab(tab)}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${activeSettingsTab === tab
-                      ? 'bg-white text-black'
-                      : 'text-white hover:bg-white/10'
-                    }`}
+                  title="Share your Montip stats on Farcaster"
+                  className="text-white hover:text-yellow-300 transition-colors p-2 rounded-full"
+                  onClick={() => shareStats({ tipperTotal, earnerTotal, tipperTokens, earnerTokens })}
                 >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  <FaShareAlt size={22} />
                 </button>
-              ))}
+              )}
             </div>
-            {/* Card content always below tab navigation, never affects tab position */}
-            <div className="bg-white/20 border border-white/30 shadow-xl rounded-2xl p-4 w-full max-w-[370px] flex flex-col items-center justify-start" style={{ minHeight: '420px' }}>
-              <div className="w-full">
-                {/* Connect wallet button below tab navigation if not connected, always show info text below */}
-                {!isConnected && (
-                  <div className="flex flex-col items-center justify-center w-full h-full min-h-[320px] flex-1">
-                    <button
-                      onClick={() => connect({ connector: farcasterFrame() })}
-                      className="bg-white text-black px-6 py-2 rounded text-lg font-bold hover:bg-white/90 mb-3"
-                    >
-                      Connect Wallet
-                    </button>
-                    <div className="text-white text-center text-sm">Connect your login wallet to manage tokens.</div>
+            <div className="w-full max-w-lg mx-auto mb-4 bg-white/10 rounded-2xl p-4">
+              <div className="flex flex-row items-center justify-center gap-4">
+                {/* Tipped section */}
+                <div className="bg-white/20 rounded-xl px-4 py-2 flex flex-col items-center min-w-[140px]">
+                  <span className="text-[11px] text-white/80 mb-1">Tipped</span>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {Object.keys(tipperTokens).length === 0 && <span className="text-xs text-white/40">-</span>}
+                    {Object.entries(tipperTokens)
+                      .sort((a, b) => b[1] - a[1])
+                      .slice(0, 4)
+                      .map(([symbol, amt]) => (
+                        <span key={symbol} className="bg-white/20 rounded px-2 py-0.5 text-xs text-white font-mono">
+                          {amt.toFixed(4)} {symbol}
+                        </span>
+                      ))}
                   </div>
-                )}
-                {isConnected && (
-                  <>
-                    {activeSettingsTab === 'deposit' && (
-                      <>
-                        {/* From/To Wallets at the top */}
-                        <div className="w-full mb-4">
-                          <div className="text-xs text-white/80 mb-1">From connected wallet:</div>
-                          <span className="block font-mono text-xs text-white bg-black/20 rounded px-2 py-1 mb-2 break-all">
-                            {address}
-                          </span>
-                          <div className="text-xs text-white/80 mb-1">To your Montip wallet:</div>
-                          <span className="block font-mono text-xs text-white bg-black/20 rounded px-2 py-1 break-all">
-                            {walletAddress}
-                          </span>
-                        </div>
-                        <div className="w-full mb-4">
-                          <select
-                            value={depositToken.symbol}
-                            onChange={e => setDepositToken(TOKENS.find(t => t.symbol === e.target.value) || TOKENS[0])}
-                            className="w-full p-3 rounded-lg border border-gray-300 text-lg font-semibold text-gray-800 focus:outline-none"
-                          >
-                            {TOKENS.map(token => (
-                              <option key={token.symbol} value={token.symbol}>
-                                {token.symbol}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="w-full mb-2 text-right text-xs text-white/80 flex items-center justify-end gap-1">
-                          <span>
-                            Balance: {loginWalletBalances[depositToken.symbol] ? Number(loginWalletBalances[depositToken.symbol]).toFixed(4) : '0.0000'} {depositToken.symbol}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={handleUpdateBalances}
-                            title="Refresh balance"
-                            style={{ padding: 0, marginLeft: 4, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', height: 18 }}
-                            className={`hover:opacity-80 focus:outline-none ${polling ? 'animate-spin' : ''}`}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.65 6.35A8 8 0 1 0 19 12h-1.5" />
-                              <polyline points="19 4 19 12 11 12" />
-                            </svg>
-                          </button>
-                        </div>
-                        <div className="w-full mb-4 relative">
-                          <input
-                            type="number"
-                            min="0"
-                            step="any"
-                            value={depositAmount}
-                            onChange={e => setDepositAmount(e.target.value)}
-                            placeholder="Amount"
-                            className="w-full p-3 rounded-lg border border-gray-300 text-lg font-mono focus:outline-none pr-16"
-                          />
-                          <button
-                            type="button"
-                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 text-black text-xs font-bold px-3 py-1 rounded shadow hover:bg-white"
-                            style={{ zIndex: 2 }}
-                            onClick={() => {
-                              const bal = loginWalletBalances[depositToken.symbol] ? Number(loginWalletBalances[depositToken.symbol]) : 0;
-                              if (depositToken.symbol === "MON") {
-                                setDepositAmount(bal > 0.002 ? (bal - 0.002).toFixed(4) : "0");
-                              } else {
-                                setDepositAmount(bal.toFixed(4));
-                              }
-                            }}
-                          >
-                            Max
-                          </button>
-                        </div>
-                        <button
-                          className="w-full bg-green-500 hover:bg-green-600 text-white text-lg font-bold py-3 rounded-lg transition-all duration-150 shadow mb-4"
-                          onClick={handleDeposit}
-                          disabled={isDepositing || !depositAmount || !walletAddress || !address}
-                        >
-                          {isDepositing ? "Depositing..." : `Deposit ${depositToken.symbol}`}
-                        </button>
-                        {depositSuccess && <div className="mt-2 text-green-300 text-center font-semibold">{depositSuccess}</div>}
-                        {depositError && (
-                          <div className="mt-2 text-red-300 text-center font-semibold">
-                            {depositError === 'You do not have enough balance to deposit.' && 'Insufficient balance.'}
-                            {depositError === 'Please switch to Monad Testnet to deposit.' && 'Please switch to Monad Testnet to deposit.'}
-                            {depositError === 'Please connect your wallet to deposit.' && 'Please connect your wallet to deposit.'}
-                            {depositError === 'Please enter a valid amount.' && 'Please enter a valid amount.'}
-                            {depositError === 'There was an issue with the token address. Please try again.' && 'There was an issue with the token address. Please try again.'}
-                            {depositError === 'You rejected the transaction.' && 'You rejected the transaction.'}
-                            {depositError === 'Deposit failed. Please try again.' && 'Deposit failed. Please try again.'}
-                            {/* fallback for any other error */}
-                            {![
-                              'You do not have enough balance to deposit.',
-                              'Please switch to Monad Testnet to deposit.',
-                              'Please connect your wallet to deposit.',
-                              'Please enter a valid amount.',
-                              'There was an issue with the token address. Please try again.',
-                              'You rejected the transaction.',
-                              'Deposit failed. Please try again.'
-                            ].includes(depositError) && depositError}
-                          </div>
-                        )}
-                      </>
-                    )}
-
-                    {activeSettingsTab === 'withdraw' && (
-                      <>
-                        <div className="w-full mb-4">
-                          <div className="text-xs text-white/80 mb-1">From your Montip wallet:</div>
-                          <span className="block font-mono text-xs text-white bg-black/20 rounded px-2 py-1 break-all w-full">{walletAddress}</span>
-                        </div>
-                        <div className="w-full mb-4">
-                          <div className="text-xs text-white/80 mb-1">Send to login wallet:</div>
-                          <span className="block font-mono text-xs text-white bg-black/20 rounded px-2 py-1 break-all">
-                            {address || "-"}
-                          </span>
-                        </div>
-                        <div className="w-full mb-4 flex items-center">
-                          <input
-                            id="withdraw-different-wallet"
-                            type="checkbox"
-                            className="mr-2"
-                            checked={withdrawToOther}
-                            onChange={e => setWithdrawToOther(e.target.checked)}
-                          />
-                          <label htmlFor="withdraw-different-wallet" className="text-xs text-white/80">Withdraw to a different wallet</label>
-                        </div>
-                        {withdrawToOther && (
-                          <div className="w-full mb-4">
-                            <input
-                              type="text"
-                              value={withdrawOtherAddress}
-                              onChange={e => setWithdrawOtherAddress(e.target.value)}
-                              placeholder="Recipient address"
-                              className="w-full p-3 rounded-lg border border-gray-300 text-lg font-mono focus:outline-none"
-                            />
-                          </div>
-                        )}
-                        <div className="w-full mb-4">
-                          <select
-                            value={withdrawToken.symbol}
-                            onChange={e => setWithdrawToken(TOKENS.find(t => t.symbol === e.target.value) || TOKENS[0])}
-                            className="w-full p-3 rounded-lg border border-gray-300 text-lg font-semibold text-gray-800 focus:outline-none"
-                          >
-                            {TOKENS.map(token => (
-                              <option key={token.symbol} value={token.symbol}>
-                                {token.symbol}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="w-full mb-2 text-right text-xs text-white/80 flex items-center justify-end gap-1">
-                          <span>
-                            Balance: {montipBalances[withdrawToken.symbol] ? Number(montipBalances[withdrawToken.symbol]).toFixed(4) : '0.0000'} {withdrawToken.symbol}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={handleUpdateBalances}
-                            title="Refresh balance"
-                            style={{ padding: 0, marginLeft: 4, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', height: 18 }}
-                            className={`hover:opacity-80 focus:outline-none ${polling ? 'animate-spin' : ''}`}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.65 6.35A8 8 0 1 0 19 12h-1.5" />
-                              <polyline points="19 4 19 12 11 12" />
-                            </svg>
-                          </button>
-                        </div>
-                        <div className="w-full mb-4 relative">
-                          <input
-                            type="number"
-                            min="0"
-                            step="any"
-                            value={withdrawAmount}
-                            onChange={e => setWithdrawAmount(e.target.value)}
-                            placeholder="Amount"
-                            className="w-full p-3 rounded-lg border border-gray-300 text-lg font-mono focus:outline-none pr-16"
-                          />
-                          <button
-                            type="button"
-                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 text-black text-xs font-bold px-3 py-1 rounded shadow hover:bg-white"
-                            style={{ zIndex: 2 }}
-                            onClick={() => {
-                              const bal = montipBalances[withdrawToken.symbol] ? Number(montipBalances[withdrawToken.symbol]) : 0;
-                              if (withdrawToken.symbol === "MON") {
-                                setWithdrawAmount(bal > 0.0081 ? (bal - 0.0081).toFixed(4) : "0");
-                              } else {
-                                setWithdrawAmount(bal.toFixed(4));
-                              }
-                            }}
-                          >
-                            Max
-                          </button>
-                        </div>
-                        <button
-                          className="w-full bg-green-500 hover:bg-green-600 text-white text-lg font-bold py-3 rounded-lg transition-all duration-150 shadow mb-4"
-                          onClick={handleWithdraw}
-                          disabled={isWithdrawing || !withdrawAmount || !walletAddress || (!address && !withdrawToOther) || Number(withdrawAmount) <= 0}
-                        >
-                          {isWithdrawing ? `Withdrawing...` : `Withdraw ${withdrawToken.symbol}`}
-                        </button>
-                        {withdrawSuccess && <div className="mt-2 text-green-300 text-center font-semibold">Withdraw successful! Your funds are on the way.</div>}
-                        {withdrawError && (
-                          <div className="mt-2 text-red-300 text-center font-semibold">
-                            {withdrawError === 'You do not have enough balance to withdraw.' && 'Insufficient balance.'}
-                            {withdrawError === 'No Montip wallet found.' && 'No Montip wallet found.'}
-                            {withdrawError === 'No recipient address provided.' && 'No recipient address provided.'}
-                            {withdrawError === 'Please enter a valid amount.' && 'Please enter a valid amount.'}
-                            {withdrawError === 'There was an issue with the address. Please try again.' && 'There was an issue with the address. Please try again.'}
-                            {withdrawError === 'You rejected the transaction.' && 'You rejected the transaction.'}
-                            {withdrawError === 'Withdraw failed. Please try again.' && 'Withdraw failed. Please try again.'}
-                            {/* fallback for any other error */}
-                            {![
-                              'You do not have enough balance to withdraw.',
-                              'No Montip wallet found.',
-                              'No recipient address provided.',
-                              'Please enter a valid amount.',
-                              'There was an issue with the address. Please try again.',
-                              'You rejected the transaction.',
-                              'Withdraw failed. Please try again.'
-                            ].includes(withdrawError) && withdrawError}
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </>
-                )}
+                </div>
+                {/* Earned section */}
+                <div className="bg-white/20 rounded-xl px-4 py-2 flex flex-col items-center min-w-[140px]">
+                  <span className="text-[11px] text-white/80 mb-1">Earned</span>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {Object.keys(earnerTokens).length === 0 && <span className="text-xs text-white/40">-</span>}
+                    {Object.entries(earnerTokens)
+                      .sort((a, b) => b[1] - a[1])
+                      .slice(0, 4)
+                      .map(([symbol, amt]) => (
+                        <span key={symbol} className="bg-white/20 rounded px-2 py-0.5 text-xs text-white font-mono">
+                          {amt.toFixed(4)} {symbol}
+                        </span>
+                      ))}
+                  </div>
+                </div>
               </div>
             </div>
+            {/* History section header */}
+            <div className="w-full max-w-lg mx-auto mt-4 mb-1">
+              <span className="block text-lg font-bold text-white/80 pl-2">History</span>
+            </div>
+            {/* Tip History Section */}
+            {fid && (
+              <div className="w-full max-w-lg mx-auto mt-4 bg-white/10 rounded-2xl p-4">
+                <div className="flex justify-center mb-4 space-x-2">
+                  <button
+                    className={`px-4 py-2 rounded-full font-bold text-sm ${historyMode === 'tipper' ? 'bg-white text-purple-700' : 'bg-purple-700 text-white border border-white/30'}`}
+                    onClick={() => setHistoryMode('tipper')}
+                  >
+                    Tipped
+                  </button>
+                  <button
+                    className={`px-4 py-2 rounded-full font-bold text-sm ${historyMode === 'earner' ? 'bg-white text-purple-700' : 'bg-purple-700 text-white border border-white/30'}`}
+                    onClick={() => setHistoryMode('earner')}
+                  >
+                    Earned
+                  </button>
+                </div>
+                {historyLoading ? (
+                  <div className="text-white text-center">Loading...</div>
+                ) : historyError ? (
+                  <div className="text-red-300 text-center">{historyError}</div>
+                ) : currentHistory.length === 0 ? (
+                  <div className="text-white text-center">No history found.</div>
+                ) : (
+                  <ul className="space-y-3 overflow-y-auto" style={{ maxHeight: '320px', minHeight: '80px' }}>
+                    {currentHistory.map(tx => (
+                      <li key={tx.id} className="bg-white/20 rounded-lg px-4 py-3 flex flex-col">
+                        <span className="font-bold text-white text-sm">
+                          {historyMode === 'tipper'
+                            ? `You tipped @${tx.recipient_username || 'unknown'} ${tx.amount} ${tx.token_symbol}`
+                            : `You received ${tx.amount} ${tx.token_symbol} from @${tx.tipper_username || 'unknown'}`}
+                        </span>
+                        <span className="text-xs text-indigo-100 mt-1">
+                          {tx.timestamp ? new Date(tx.timestamp).toLocaleString() : ''}
+                        </span>
+                        <span className={`text-xs mt-1 ${tx.tx_status === 'success' ? 'text-green-300' : 'text-red-300'}`}>
+                          {tx.tx_status}
+                        </span>
+                        {tx.failure_reason && (
+                          <span className="text-xs text-red-200 mt-1">{tx.failure_reason}</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -927,29 +1196,36 @@ export default function Home() {
           </button>
         </div>
       )}
-
+      
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/10 backdrop-blur-lg border-t border-white/20">
-        <div className="max-w-lg mx-auto px-4">
-          <div className="flex justify-around py-3">
-            <button
-              onClick={() => setActiveMainTab('wallet')}
-              className={`flex flex-col items-center ${activeMainTab === 'wallet' ? 'text-white' : 'text-white/60'}`}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+      <div className="w-full bg-white/10 backdrop-blur-lg border-t border-white/20 fixed bottom-0 left-0 right-0">
+        <div className="max-w-lg mx-auto px-4 py-3 flex justify-around items-center">
+          <button
+            onClick={() => setActivePage('home')}
+            className={`flex flex-col items-center space-y-1 ${activePage === 'home' ? 'text-white' : 'text-white/60'}`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+            </svg>
+            <span className="text-xs">Home</span>
+          </button>
+          <button
+            onClick={() => setActivePage('profile')}
+            className={`flex flex-col items-center space-y-1 ${activePage === 'profile' ? 'text-white' : 'text-white/60'}`}
+          >
+            {pfpurl ? (
+              <img 
+                src={pfpurl} 
+                alt="Profile" 
+                className="w-6 h-6 rounded-full object-cover"
+              />
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-            </button>
-            <button
-              onClick={() => setActiveMainTab('settings')}
-              className={`flex flex-col items-center ${activeMainTab === 'settings' ? 'text-white' : 'text-white/60'}`}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </button>
-          </div>
+            )}
+            <span className="text-xs">Profile</span>
+          </button>
         </div>
       </div>
 
@@ -957,3 +1233,4 @@ export default function Home() {
     </div>
   );
 }
+
