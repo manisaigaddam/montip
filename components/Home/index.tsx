@@ -18,10 +18,6 @@ import {
   useWriteContract,
 } from "wagmi";
 import { farcasterFrame } from "@farcaster/frame-wagmi-connector";
-import { APP_URL } from '@/lib/constants';
-import { useFrame } from '@/components/farcaster-provider';
-import { FaShareAlt } from 'react-icons/fa';
-import { useShareStats } from '@/components/FarcasterActions';
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS as `0x${string}`;
 
@@ -102,8 +98,13 @@ interface TipTransaction {
   failure_reason: string;
 }
 
+function formatCompact(val: number | string) {
+  if (isNaN(Number(val))) return '0.00';
+  return Intl.NumberFormat('en', { maximumFractionDigits: 2, minimumFractionDigits: 2, notation: 'compact' }).format(Number(val));
+}
+
 export default function Home() {
-  const { context, isEthProviderAvailable } = useMiniAppContext();
+  const { context, isEthProviderAvailable, actions } = useMiniAppContext();
   const [copied, setCopied] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -172,9 +173,6 @@ export default function Home() {
   const [earnerTotal, setEarnerTotal] = useState(0);
   const [tipperTokens, setTipperTokens] = useState<{ [symbol: string]: number }>({});
   const [earnerTokens, setEarnerTokens] = useState<{ [symbol: string]: number }>({});
-
-  const { actions } = useFrame();
-  const { shareStats } = useShareStats();
 
   // Auto-hide messages
   useEffect(() => {
@@ -576,10 +574,11 @@ export default function Home() {
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
+          const successTxs = data.filter(tx => tx.tx_status === 'success');
           setTipperHistory(data);
           let sum = 0;
           const tokenMap: { [symbol: string]: number } = {};
-          data.forEach(tx => {
+          successTxs.forEach(tx => {
             const amt = parseFloat(tx.amount || 0);
             sum += amt;
             if (tx.token_symbol) {
@@ -604,10 +603,11 @@ export default function Home() {
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
+          const successTxs = data.filter(tx => tx.tx_status === 'success');
           setEarnerHistory(data);
           let sum = 0;
           const tokenMap: { [symbol: string]: number } = {};
-          data.forEach(tx => {
+          successTxs.forEach(tx => {
             const amt = parseFloat(tx.amount || 0);
             sum += amt;
             if (tx.token_symbol) {
@@ -642,10 +642,11 @@ export default function Home() {
       .then(data => {
         if (Array.isArray(data)) {
           if (historyMode === 'tipper') {
+            const successTxs = data.filter(tx => tx.tx_status === 'success');
             setTipperHistory(data);
             let sum = 0;
             const tokenMap: { [symbol: string]: number } = {};
-            data.forEach(tx => {
+            successTxs.forEach(tx => {
               const amt = parseFloat(tx.amount || 0);
               sum += amt;
               if (tx.token_symbol) {
@@ -655,10 +656,11 @@ export default function Home() {
             setTipperTotal(sum);
             setTipperTokens(tokenMap);
           } else {
+            const successTxs = data.filter(tx => tx.tx_status === 'success');
             setEarnerHistory(data);
             let sum = 0;
             const tokenMap: { [symbol: string]: number } = {};
-            data.forEach(tx => {
+            successTxs.forEach(tx => {
               const amt = parseFloat(tx.amount || 0);
               sum += amt;
               if (tx.token_symbol) {
@@ -699,8 +701,6 @@ export default function Home() {
   const currentHistory = historyMode === 'tipper' ? tipperHistory : earnerHistory;
   const currentTotal = historyMode === 'tipper' ? tipperTotal : earnerTotal;
   const currentTokens = historyMode === 'tipper' ? tipperTokens : earnerTokens;
-
-  // Share functionality is now handled by useShareStats hook
 
   // No custom splash logic; rely on Warpcast SDK splash
   if (loading) return null;
@@ -1082,26 +1082,8 @@ export default function Home() {
         {activePage === 'profile' && (
           <div className="w-full h-full flex flex-col items-center justify-center">
             {/* Totals section header */}
-            <div className="w-full max-w-lg mx-auto mt-4 mb-1 flex items-center justify-between">
+            <div className="w-full max-w-lg mx-auto mt-4 mb-1">
               <span className="block text-lg font-bold text-white/80 pl-2">Total</span>
-              {/* Share/Cast Icon */}
-              {actions && (
-                <button
-                  title="Share your Montip stats on Farcaster"
-                  className="text-white hover:text-yellow-300 transition-colors p-2 rounded-full"
-                  onClick={async () => {
-                    try {
-                      console.log('[CAST DEBUG] Share button clicked in Home component');
-                      const result = await shareStats({ tipperTotal, earnerTotal, tipperTokens, earnerTokens });
-                      console.log('[CAST DEBUG] Share button completed with result:', result);
-                    } catch (error) {
-                      console.error('[CAST DEBUG] Error in share button onClick:', error);
-                    }
-                  }}
-                >
-                  <FaShareAlt size={22} />
-                </button>
-              )}
             </div>
             <div className="w-full max-w-lg mx-auto mb-4 bg-white/10 rounded-2xl p-4">
               <div className="flex flex-row items-center justify-center gap-4">
@@ -1115,7 +1097,7 @@ export default function Home() {
                       .slice(0, 4)
                       .map(([symbol, amt]) => (
                         <span key={symbol} className="bg-white/20 rounded px-2 py-0.5 text-xs text-white font-mono">
-                          {amt.toFixed(4)} {symbol}
+                          <span title={amt.toLocaleString(undefined, { maximumFractionDigits: 8 })}>{formatCompact(amt)} {symbol}</span>
                         </span>
                       ))}
                   </div>
@@ -1130,7 +1112,7 @@ export default function Home() {
                       .slice(0, 4)
                       .map(([symbol, amt]) => (
                         <span key={symbol} className="bg-white/20 rounded px-2 py-0.5 text-xs text-white font-mono">
-                          {amt.toFixed(4)} {symbol}
+                          <span title={amt.toLocaleString(undefined, { maximumFractionDigits: 8 })}>{formatCompact(amt)} {symbol}</span>
                         </span>
                       ))}
                   </div>
@@ -1167,7 +1149,11 @@ export default function Home() {
                 ) : (
                   <ul className="space-y-3 overflow-y-auto" style={{ maxHeight: '320px', minHeight: '80px' }}>
                     {currentHistory.map(tx => (
-                      <li key={tx.id} className="bg-white/20 rounded-lg px-4 py-3 flex flex-col">
+                      <li
+                        key={tx.id}
+                        className={`bg-white/20 rounded-lg px-4 py-3 flex flex-col${tx.tx_status === 'success' ? ' cursor-pointer hover:bg-white/30 transition' : ''}`}
+                        onClick={tx.tx_status === 'success' ? () => actions?.openUrl && actions.openUrl(`https://testnet.monadexplorer.com/tx/${tx.tx_hash}`) : undefined}
+                      >
                         <span className="font-bold text-white text-sm">
                           {historyMode === 'tipper'
                             ? `You tipped @${tx.recipient_username || 'unknown'} ${tx.amount} ${tx.token_symbol}`
@@ -1179,9 +1165,6 @@ export default function Home() {
                         <span className={`text-xs mt-1 ${tx.tx_status === 'success' ? 'text-green-300' : 'text-red-300'}`}>
                           {tx.tx_status}
                         </span>
-                        {tx.failure_reason && (
-                          <span className="text-xs text-red-200 mt-1">{tx.failure_reason}</span>
-                        )}
                       </li>
                     ))}
                   </ul>
@@ -1241,3 +1224,5 @@ export default function Home() {
     </div>
   );
 }
+
+
