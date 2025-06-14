@@ -1,7 +1,7 @@
 "use client";
 
 import { useMiniAppContext } from "@/hooks/use-miniapp-context";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { createPublicClient, http, formatUnits } from "viem";
 import { monadTestnet } from "viem/chains";
 import factoryAbi from "@/lib/factoryAbi.json";
@@ -18,6 +18,7 @@ import {
   useWriteContract,
 } from "wagmi";
 import { farcasterFrame } from "@farcaster/frame-wagmi-connector";
+import { APP_URL } from "@/lib/constants";
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS as `0x${string}`;
 
@@ -90,12 +91,29 @@ interface TipTransaction {
   token_symbol: string;
   token_address: string;
   amount: string;
-  amount_wei: string;
   cast_hash: string;
   parent_cast_hash: string;
   block_number: number;
   gas_used: string;
   failure_reason: string;
+}
+
+// Add leaderboard types
+interface TokenPrice {
+  name: string;
+  symbol: string;
+  address: string;
+  decimals: number;
+  categories: string[];
+  mon_per_token: string;
+  pconf: string;
+}
+
+interface LeaderboardEntry {
+  fid: number;
+  username: string;
+  total_mon_value: number;
+  type: 'tipper' | 'earner';
 }
 
 function formatCompact(val: number | string) {
@@ -112,11 +130,11 @@ export default function Home() {
   const [balances, setBalances] = useState<Record<string, string>>({});
   const [polling, setPolling] = useState(false);
   const [creationError, setCreationError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'assets' | 'deposit' | 'withdraw'>('assets');
+  const [activeTab, setActiveTab] = useState<'assets' | 'deposit' | 'withdraw' | 'leaderboard'>('assets');
   const [showDeposit, setShowDeposit] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [showMontipWallet, setShowMontipWallet] = useState(false);
-  const [activePage, setActivePage] = useState<'home' | 'profile'>('home');
+  const [activePage, setActivePage] = useState<'home' | 'profile' | 'leaderboard'>('home');
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const fid = context?.user?.fid;
   const username = context?.user?.username || "-";
@@ -173,6 +191,25 @@ export default function Home() {
   const [earnerTotal, setEarnerTotal] = useState(0);
   const [tipperTokens, setTipperTokens] = useState<{ [symbol: string]: number }>({});
   const [earnerTokens, setEarnerTokens] = useState<{ [symbol: string]: number }>({});
+
+  // Leaderboard state
+  const [topTippers, setTopTippers] = useState<LeaderboardEntry[]>([]);
+  const [topEarners, setTopEarners] = useState<LeaderboardEntry[]>([]);
+  const [leaderboardMode, setLeaderboardMode] = useState<'tippers' | 'earners'>('tippers');
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
+  const [tokenPrices, setTokenPrices] = useState<{ [symbol: string]: TokenPrice }>({});
+  const [lastLeaderboardUpdate, setLastLeaderboardUpdate] = useState<Date | null>(null);
+  const leaderboardIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // User-specific leaderboard stats
+  const [userLeaderboardStats, setUserLeaderboardStats] = useState<{
+    total_mon_tipped: number;
+    total_mon_earned: number;
+  }>({
+    total_mon_tipped: 0,
+    total_mon_earned: 0
+  });
 
   // Auto-hide messages
   useEffect(() => {
@@ -587,16 +624,29 @@ export default function Home() {
           });
           setTipperTotal(sum);
           setTipperTokens(tokenMap);
+          
+          // Calculate user leaderboard stats from tipper transactions
+          // We'll call this after both tipper and earner data are fetched
         } else {
           setTipperHistory([]);
           setTipperTotal(0);
           setTipperTokens({});
+          // Reset user stats if no data
+          setUserLeaderboardStats({
+            total_mon_tipped: 0,
+            total_mon_earned: 0
+          });
         }
       })
       .catch(() => {
         setTipperHistory([]);
         setTipperTotal(0);
         setTipperTokens({});
+        // Reset user stats on error
+        setUserLeaderboardStats({
+          total_mon_tipped: 0,
+          total_mon_earned: 0
+        });
       });
     // Fetch earner
     fetch(`/api/history?fid=${fid}&mode=earner`)
@@ -632,75 +682,245 @@ export default function Home() {
     setHistoryMode('tipper');
   }, [activePage, fid]);
 
-  // On history tab switch, always re-fetch and update relevant history and totals
-  useEffect(() => {
-    if (activePage !== 'profile') return;
-    setHistoryLoading(true);
-    setHistoryError(null);
-    fetch(`/api/history?fid=${fid}&mode=${historyMode}`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          if (historyMode === 'tipper') {
-            const successTxs = data.filter(tx => tx.tx_status === 'success');
-            setTipperHistory(data);
-            let sum = 0;
-            const tokenMap: { [symbol: string]: number } = {};
-            successTxs.forEach(tx => {
-              const amt = parseFloat(tx.amount || 0);
-              sum += amt;
-              if (tx.token_symbol) {
-                tokenMap[tx.token_symbol] = (tokenMap[tx.token_symbol] || 0) + amt;
-              }
-            });
-            setTipperTotal(sum);
-            setTipperTokens(tokenMap);
-          } else {
-            const successTxs = data.filter(tx => tx.tx_status === 'success');
-            setEarnerHistory(data);
-            let sum = 0;
-            const tokenMap: { [symbol: string]: number } = {};
-            successTxs.forEach(tx => {
-              const amt = parseFloat(tx.amount || 0);
-              sum += amt;
-              if (tx.token_symbol) {
-                tokenMap[tx.token_symbol] = (tokenMap[tx.token_symbol] || 0) + amt;
-              }
-            });
-            setEarnerTotal(sum);
-            setEarnerTokens(tokenMap);
-          }
-        } else {
-          if (historyMode === 'tipper') {
-            setTipperHistory([]);
-            setTipperTotal(0);
-            setTipperTokens({});
-          } else {
-            setEarnerHistory([]);
-            setEarnerTotal(0);
-            setEarnerTokens({});
-          }
-        }
-      })
-      .catch(() => {
-        if (historyMode === 'tipper') {
-          setTipperHistory([]);
-          setTipperTotal(0);
-          setTipperTokens({});
-        } else {
-          setEarnerHistory([]);
-          setEarnerTotal(0);
-          setEarnerTokens({});
-        }
-      })
-      .finally(() => setHistoryLoading(false));
-  }, [historyMode, activePage, fid]);
+  // On history tab switch, only show different data (no re-fetch needed)
+  // Data is already fetched when profile page loads
 
   // For rendering, always show both tipper and earner totals/tokens, but only one history
   // (currentHistory, currentTotal, currentTokens are still used for the history list)
   const currentHistory = historyMode === 'tipper' ? tipperHistory : earnerHistory;
   const currentTotal = historyMode === 'tipper' ? tipperTotal : earnerTotal;
   const currentTokens = historyMode === 'tipper' ? tipperTokens : earnerTokens;
+
+  // Fetch token prices from Monorail API
+  const fetchTokenPrices = useCallback(async () => {
+    const prices: { [symbol: string]: TokenPrice } = {};
+    
+    try {
+      // Fetch prices for all supported tokens in parallel
+      const pricePromises = TOKENS.map(async (token) => {
+        if (!token.address) {
+          // For MON, we set price as 1 MON = 1 MON
+          prices[token.symbol] = {
+            name: "Monad",
+            symbol: token.symbol,
+            address: "",
+            decimals: token.decimals,
+            categories: [],
+            mon_per_token: "1",
+            pconf: "100"
+          };
+          return;
+        }
+
+        try {
+          const response = await fetch(`https://testnet-api.monorail.xyz/v1/token/${token.address}`, {
+            headers: { 'accept': 'application/json' }
+          });
+          
+          if (response.ok) {
+            const priceData: TokenPrice = await response.json();
+            prices[token.symbol] = priceData;
+          }
+        } catch (error) {
+          console.warn(`Failed to fetch price for ${token.symbol}:`, error);
+        }
+      });
+
+      await Promise.all(pricePromises);
+      setTokenPrices(prices);
+      return prices;
+    } catch (error) {
+      console.error("Error fetching token prices:", error);
+      return prices;
+    }
+  }, []);
+
+  // Calculate user leaderboard stats from their transactions
+  const calculateUserStats = useCallback(async (tipperTxs: TipTransaction[], earnerTxs: TipTransaction[]) => {
+    try {
+      // Get token prices for conversion
+      const prices = await fetchTokenPrices();
+      
+      let totalMonTipped = 0;
+      let totalMonEarned = 0;
+      
+      // Process successful tipper transactions (what user sent, excluding self-tips)
+      const successTipperTxs = tipperTxs.filter(tx => tx.tx_status === 'success' && tx.tipper_fid !== tx.recipient_fid);
+      successTipperTxs.forEach(tx => {
+        const amount = parseFloat(tx.amount || '0');
+        let monValue = 0;
+
+        if (tx.token_symbol === 'MON') {
+          monValue = amount; // Direct MON
+        } else {
+          const tokenPrice = prices[tx.token_symbol];
+          if (tokenPrice && tokenPrice.mon_per_token) {
+            monValue = amount * parseFloat(tokenPrice.mon_per_token); // ERC-20 to MON conversion
+          }
+        }
+
+        totalMonTipped += monValue;
+      });
+
+      // Process successful earner transactions (what user received, excluding self-tips)
+      const successEarnerTxs = earnerTxs.filter(tx => tx.tx_status === 'success' && tx.tipper_fid !== tx.recipient_fid);
+      successEarnerTxs.forEach(tx => {
+        const amount = parseFloat(tx.amount || '0');
+        let monValue = 0;
+
+        if (tx.token_symbol === 'MON') {
+          monValue = amount; // Direct MON
+        } else {
+          const tokenPrice = prices[tx.token_symbol];
+          if (tokenPrice && tokenPrice.mon_per_token) {
+            monValue = amount * parseFloat(tokenPrice.mon_per_token); // ERC-20 to MON conversion
+          }
+        }
+
+        totalMonEarned += monValue;
+      });
+
+      setUserLeaderboardStats({
+        total_mon_tipped: totalMonTipped,
+        total_mon_earned: totalMonEarned
+      });
+    } catch (error) {
+      console.error('Error calculating user stats:', error);
+    }
+  }, [fetchTokenPrices]);
+
+  // Calculate user stats when both histories are available
+  useEffect(() => {
+    if (activePage === 'profile' && (tipperHistory.length > 0 || earnerHistory.length > 0)) {
+      calculateUserStats(tipperHistory, earnerHistory);
+    }
+  }, [activePage, tipperHistory, earnerHistory, calculateUserStats]);
+
+  // Fetch leaderboard data and calculate MON values for both tippers and earners
+  const fetchLeaderboardData = useCallback(async () => {
+    setLeaderboardLoading(true);
+    setLeaderboardError(null);
+
+    try {
+      // Fetch token prices first
+      const prices = await fetchTokenPrices();
+
+      // Fetch all tip transactions with status = 'success'
+      const response = await fetch('/api/leaderboard');
+      if (!response.ok) {
+        throw new Error('Failed to fetch leaderboard data');
+      }
+
+      const transactions: TipTransaction[] = await response.json();
+      
+      // Group transactions by tipper_fid for top tippers
+      const tipperMap = new Map<number, {
+        fid: number;
+        username: string;
+        total_mon_value: number;
+      }>();
+
+      // Group transactions by recipient_fid for top earners
+      const earnerMap = new Map<number, {
+        fid: number;
+        username: string;
+        total_mon_value: number;
+      }>();
+
+      transactions
+        .filter(tx => tx.tx_status === 'success' && tx.tipper_fid !== tx.recipient_fid)
+        .forEach(tx => {
+          const amount = parseFloat(tx.amount || '0');
+          let monValue = 0;
+
+          // Convert amount to MON (Direct MON + ERC-20 conversion)
+          if (tx.token_symbol === 'MON') {
+            monValue = amount; // Direct MON
+          } else {
+            const tokenPrice = prices[tx.token_symbol];
+            if (tokenPrice && tokenPrice.mon_per_token) {
+              monValue = amount * parseFloat(tokenPrice.mon_per_token); // ERC-20 to MON conversion
+            }
+          }
+
+          // Add to tipper map (who sent the tip)
+          const existingTipper = tipperMap.get(tx.tipper_fid) || {
+            fid: tx.tipper_fid,
+            username: tx.tipper_username,
+            total_mon_value: 0
+          };
+          existingTipper.total_mon_value += monValue;
+          tipperMap.set(tx.tipper_fid, existingTipper);
+
+          // Add to earner map (who received the tip)
+          const existingEarner = earnerMap.get(tx.recipient_fid) || {
+            fid: tx.recipient_fid,
+            username: tx.recipient_username,
+            total_mon_value: 0
+          };
+          existingEarner.total_mon_value += monValue;
+          earnerMap.set(tx.recipient_fid, existingEarner);
+        });
+
+      // Convert to arrays and sort by total MON value
+      const topTippersData: LeaderboardEntry[] = Array.from(tipperMap.values())
+        .map(entry => ({
+          fid: entry.fid,
+          username: entry.username,
+          total_mon_value: entry.total_mon_value,
+          type: 'tipper' as const
+        }))
+        .sort((a, b) => b.total_mon_value - a.total_mon_value)
+        .slice(0, 10); // Top 10 tippers
+
+      const topEarnersData: LeaderboardEntry[] = Array.from(earnerMap.values())
+        .map(entry => ({
+          fid: entry.fid,
+          username: entry.username,
+          total_mon_value: entry.total_mon_value,
+          type: 'earner' as const
+        }))
+        .sort((a, b) => b.total_mon_value - a.total_mon_value)
+        .slice(0, 10); // Top 10 earners
+
+      setTopTippers(topTippersData);
+      setTopEarners(topEarnersData);
+      setLastLeaderboardUpdate(new Date());
+    } catch (error) {
+      console.error("Error fetching leaderboard:", error);
+      setLeaderboardError("Failed to load leaderboard data");
+    } finally {
+      setLeaderboardLoading(false);
+    }
+  }, [fetchTokenPrices]);
+
+  // Set up leaderboard refresh interval
+  useEffect(() => {
+    if (activePage === 'leaderboard') {
+      // Fetch immediately when entering leaderboard
+      fetchLeaderboardData();
+
+      // Set up 5-minute interval
+      leaderboardIntervalRef.current = setInterval(() => {
+        fetchLeaderboardData();
+      }, 5 * 60 * 1000); // 5 minutes
+
+      return () => {
+        if (leaderboardIntervalRef.current) {
+          clearInterval(leaderboardIntervalRef.current);
+        }
+      };
+    }
+  }, [activePage, fetchLeaderboardData]);
+
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (leaderboardIntervalRef.current) {
+        clearInterval(leaderboardIntervalRef.current);
+      }
+    };
+  }, []);
 
   // No custom splash logic; rely on Warpcast SDK splash
   if (loading) return null;
@@ -709,7 +929,7 @@ export default function Home() {
     <div className="w-full min-h-screen bg-gradient-to-br from-[#5b4dcf] to-[#a280ff] flex flex-col items-center pb-24">
       <SplashScreen />
       
-      {/* Top bar: conditional rendering for Home and Profile */}
+      {/* Top bar: conditional rendering for Home, Profile, and Leaderboard */}
       <div className="w-full flex flex-row items-center justify-between pt-6 pb-2 px-4">
         {activePage === 'home' ? (
           <>
@@ -738,6 +958,15 @@ export default function Home() {
               )}
             </div>
           </>
+        ) : activePage === 'leaderboard' ? (
+          <>
+            <div className="flex flex-row items-center space-x-3">
+              <span className="text-2xl">🏆</span>
+              <div className="flex flex-col">
+                <span className="text-lg text-white font-bold tracking-wide font-sans">Leaderboard</span>
+              </div>
+            </div>
+          </>
         ) : activePage === 'profile' ? (
           <>
             <div className="flex flex-row items-center space-x-3">
@@ -749,6 +978,26 @@ export default function Home() {
                 <span className="text-sm text-indigo-100 font-medium">FID: {fid ?? "-"}</span>
               </div>
             </div>
+            {actions && (
+              <button
+                className="ml-2 p-2 rounded-full hover:bg-white/20 transition"
+                title="Share your Montip stats on Farcaster"
+                onClick={() => {
+                  const shareUrl = `${APP_URL}/share?username=${encodeURIComponent(username || 'Unknown')}&totalTipped=${encodeURIComponent(formatCompact(userLeaderboardStats.total_mon_tipped))}&totalEarned=${encodeURIComponent(formatCompact(userLeaderboardStats.total_mon_earned))}&pfpUrl=${encodeURIComponent(pfpurl || '')}`;
+                  
+                  console.log("Share Debug:", { username, pfpurl, shareUrl });
+                  
+                  actions.composeCast && actions.composeCast({
+                    text: `Join me on Montip — the easiest way to tip your favorite Farcaster users with Monad.`,
+                    embeds: [shareUrl],
+                  });
+                }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-white">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.935-2.186 2.25 2.25 0 00-3.935 2.186z" />
+                </svg>
+              </button>
+            )}
           </>
         ) : null}
       </div>
@@ -1079,43 +1328,124 @@ export default function Home() {
           </>
         )}
 
+        {activePage === 'leaderboard' && (
+          <div className="w-full h-full flex flex-col items-center px-4 mt-4">
+            {/* Event Announcement Banner */}
+            <div className="w-full max-w-lg mx-auto mb-4">
+              <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl p-4 shadow-lg border-2 border-yellow-300">
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <span className="text-2xl mr-2">🎉</span>
+                    <span className="text-lg font-bold text-white">TIPPING CONTEST!</span>
+                    <span className="text-2xl ml-2">🎉</span>
+                  </div>
+                  <p className="text-white font-semibold text-sm mb-1">
+                    Top 5 Tippers share 500 MON prize pool!
+                  </p>
+                  <p className="text-orange-100 text-xs font-medium">
+                    Deadline:18-06-2025
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Leaderboard Tab Buttons */}
+            <div className="w-full max-w-lg mx-auto mb-4">
+              <div className="flex justify-center space-x-2">
+                <button
+                  className={`px-4 py-2 rounded-full font-bold text-sm ${leaderboardMode === 'tippers' ? 'bg-white text-purple-700' : 'bg-purple-700 text-white border border-white/30'}`}
+                  onClick={() => setLeaderboardMode('tippers')}
+                >
+                  Top Tippers
+                </button>
+                <button
+                  className={`px-4 py-2 rounded-full font-bold text-sm ${leaderboardMode === 'earners' ? 'bg-white text-purple-700' : 'bg-purple-700 text-white border border-white/30'}`}
+                  onClick={() => setLeaderboardMode('earners')}
+                >
+                  Top Earners
+                </button>
+              </div>
+            </div>
+
+            {/* Leaderboard Content */}
+            <div className="w-full max-w-lg mx-auto">
+              {leaderboardLoading ? (
+                <div className="bg-white/10 rounded-2xl p-6">
+                  <div className="text-white text-center">Loading leaderboard...</div>
+                </div>
+              ) : leaderboardError ? (
+                <div className="bg-white/10 rounded-2xl p-6">
+                  <div className="text-red-300 text-center">{leaderboardError}</div>
+                  <button
+                    onClick={() => fetchLeaderboardData()}
+                    className="mt-3 bg-white/20 text-white px-4 py-2 rounded-lg hover:bg-white/30 w-full"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : (leaderboardMode === 'tippers' ? topTippers : topEarners).length === 0 ? (
+                <div className="bg-white/10 rounded-2xl p-6">
+                  <div className="text-white text-center">No data found yet.</div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {(leaderboardMode === 'tippers' ? topTippers : topEarners).map((entry, index) => (
+                    <div key={entry.fid} className="bg-white/10 rounded-xl p-3 border border-white/20 hover:bg-white/15 transition-all">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          {/* Rank */}
+                          <div className="flex-shrink-0 w-8 flex justify-center">
+                            {index === 0 && <span className="text-xl">🥇</span>}
+                            {index === 1 && <span className="text-xl">🥈</span>}
+                            {index === 2 && <span className="text-xl">🥉</span>}
+                            {index > 2 && (
+                              <span className="text-white/80 font-bold text-sm">#{index + 1}</span>
+                            )}
+                          </div>
+                          
+                          {/* Username */}
+                          <div className="flex flex-col">
+                            <span className="text-white font-bold text-sm">@{entry.username}</span>
+                          </div>
+                        </div>
+
+                        {/* Total MON */}
+                        <div className="flex flex-col items-end">
+                          <span className="text-white font-bold text-sm">
+                            {formatCompact(entry.total_mon_value)} MON
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {activePage === 'profile' && (
           <div className="w-full h-full flex flex-col items-center justify-center">
-            {/* Totals section header */}
+            {/* Stats section header */}
             <div className="w-full max-w-lg mx-auto mt-4 mb-1">
-              <span className="block text-lg font-bold text-white/80 pl-2">Total</span>
+              <span className="block text-lg font-bold text-white/80 pl-2">Stats</span>
             </div>
             <div className="w-full max-w-lg mx-auto mb-4 bg-white/10 rounded-2xl p-4">
               <div className="flex flex-row items-center justify-center gap-4">
-                {/* Tipped section */}
-                <div className="bg-white/20 rounded-xl px-4 py-2 flex flex-col items-center min-w-[140px]">
-                  <span className="text-[11px] text-white/80 mb-1">Tipped</span>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {Object.keys(tipperTokens).length === 0 && <span className="text-xs text-white/40">-</span>}
-                    {Object.entries(tipperTokens)
-                      .sort((a, b) => b[1] - a[1])
-                      .slice(0, 4)
-                      .map(([symbol, amt]) => (
-                        <span key={symbol} className="bg-white/20 rounded px-2 py-0.5 text-xs text-white font-mono">
-                          <span title={amt.toLocaleString(undefined, { maximumFractionDigits: 8 })}>{formatCompact(amt)} {symbol}</span>
-                        </span>
-                      ))}
-                  </div>
+                {/* Total MON Tipped */}
+                <div className="bg-white/20 rounded-xl px-6 py-4 flex flex-col items-center min-w-[140px]">
+                  <span className="text-[11px] text-white/80 mb-1">Total Tipped</span>
+                  <span className="text-lg font-bold text-white">
+                    {formatCompact(userLeaderboardStats.total_mon_tipped)} MON
+                  </span>
                 </div>
-                {/* Earned section */}
-                <div className="bg-white/20 rounded-xl px-4 py-2 flex flex-col items-center min-w-[140px]">
-                  <span className="text-[11px] text-white/80 mb-1">Earned</span>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {Object.keys(earnerTokens).length === 0 && <span className="text-xs text-white/40">-</span>}
-                    {Object.entries(earnerTokens)
-                      .sort((a, b) => b[1] - a[1])
-                      .slice(0, 4)
-                      .map(([symbol, amt]) => (
-                        <span key={symbol} className="bg-white/20 rounded px-2 py-0.5 text-xs text-white font-mono">
-                          <span title={amt.toLocaleString(undefined, { maximumFractionDigits: 8 })}>{formatCompact(amt)} {symbol}</span>
-                        </span>
-                      ))}
-                  </div>
+                
+                {/* Total MON Earned */}
+                <div className="bg-white/20 rounded-xl px-6 py-4 flex flex-col items-center min-w-[140px]">
+                  <span className="text-[11px] text-white/80 mb-1">Total Earned</span>
+                  <span className="text-lg font-bold text-white">
+                    {formatCompact(userLeaderboardStats.total_mon_earned)} MON
+                  </span>
                 </div>
               </div>
             </div>
@@ -1198,7 +1528,12 @@ export default function Home() {
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
               <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
             </svg>
-            <span className="text-xs">Home</span>
+          </button>
+          <button
+            onClick={() => setActivePage('leaderboard')}
+            className={`flex flex-col items-center space-y-1 ${activePage === 'leaderboard' ? 'text-white' : 'text-white/60'}`}
+          >
+            <span className="text-2xl">🏆</span>
           </button>
           <button
             onClick={() => setActivePage('profile')}
@@ -1215,12 +1550,13 @@ export default function Home() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             )}
-            <span className="text-xs">Profile</span>
           </button>
         </div>
       </div>
 
-      <HelpButton />
+      <div className="fixed bottom-24 right-4 z-50">
+        <HelpButton />
+      </div>
     </div>
   );
 }
