@@ -1335,15 +1335,15 @@ export default function Home() {
               <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl p-4 shadow-lg border-2 border-yellow-300">
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-2">
-                    <span className="text-2xl mr-2">🎉</span>
-                    <span className="text-lg font-bold text-white">TIPPING CONTEST!</span>
-                    <span className="text-2xl ml-2">🎉</span>
+                    <span className="text-xl mr-2">🎊</span>
+                    <span className="text-base font-bold text-white">CONTEST COMPLETED!</span>
+                    <span className="text-xl ml-2">🎊</span>
                   </div>
                   <p className="text-white font-semibold text-sm mb-1">
-                    Top 5 Tippers share 500 MON prize pool!
+                  500 MON distributed to top 5 tippers!
                   </p>
                   <p className="text-orange-100 text-xs font-medium">
-                    Deadline:18-06-2025
+                    Check rewards in Montip wallet • Stay tuned for next contest! 🏆
                   </p>
                 </div>
               </div>
@@ -1560,5 +1560,6 @@ export default function Home() {
     </div>
   );
 }
+
 
 
